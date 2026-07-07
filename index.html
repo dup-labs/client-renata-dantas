@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Renata Dantas — arquitetura de interiores</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+  :root{
+    --ink:#1b1d1e;
+    --mute:#7d786e;
+    --line:rgba(30,30,28,.14);
+    --card:rgba(247,245,240,.9);
+    --poppins:'Poppins', sans-serif, system-ui, sans-serif;
+    --serif:'Cormorant Garamond', Georgia, serif;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{ font-family:var(--poppins); color:var(--ink); background:#dfe3e5; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+
+  #scene{ position:fixed; inset:0; z-index:1; }
+  #scene canvas{ display:block; }
+
+  #veil{
+    position:fixed; inset:0; z-index:60; background:#0c0d0e;
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:18px;
+    transition:opacity 1s ease .2s;
+  }
+  #veil .mark{ text-align:center; color:#e9e6df; }
+  #veil small{ display:block; font-size:11px; letter-spacing:.5em; text-transform:uppercase; color:#8a857b; margin-bottom:14px; padding-left:.5em; }
+  #veil span{ font-size:clamp(24px,5vw,42px); letter-spacing:.32em; text-transform:uppercase; padding-left:.32em; }
+  #veil .bar{ width:220px; height:2px; background:rgba(255,255,255,.15); position:relative; overflow:hidden; border-radius:2px; }
+  #veil .bar i{ position:absolute; left:0; top:0; bottom:0; width:0%; background:#e9e6df; transition:width .2s ease; }
+  #veil .status{ font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:#8a857b; }
+  #veil .veil-tip{ max-width:360px; text-align:center; padding:0 22px; color:#d6d1c7;
+    font-size:13px; line-height:1.65; letter-spacing:.08em; animation:veilTipIn 1.2s ease .35s both; }
+  #veil .veil-tip b{ color:#eeebe3; font-weight:600; }
+  @keyframes veilTipIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion:reduce){ #veil .veil-tip{ animation:none; } }
+  #veil.gone{ opacity:0; pointer-events:none; }
+
+  header{
+    position:fixed; top:0; left:0; right:0; z-index:40;
+    display:flex; justify-content:space-between; align-items:center; gap:20px;
+    padding:24px clamp(20px,5vw,52px); mix-blend-mode:difference; color:#fff; pointer-events:none;
+  }
+  header .name{ font-size:13px; letter-spacing:.32em; text-transform:uppercase; padding-left:.32em; flex:0 0 auto; cursor:pointer; }
+  header .name svg{ display:block; width:clamp(150px,20vw,240px); height:auto; }
+  header .idx{ font-size:11px; letter-spacing:.26em; text-transform:uppercase; opacity:.85; }
+  /* menu topo-direita (links pra outras páginas) */
+  header .nav{ display:flex; align-items:center; gap:clamp(16px,2.6vw,32px); pointer-events:auto; }
+  header .nav a{ position:relative; font-size:11px; letter-spacing:.26em; text-transform:uppercase;
+    color:#fff; text-decoration:none; padding-left:.26em; opacity:.82; transition:opacity .25s ease; }
+  header .nav a::after{ content:''; position:absolute; left:.26em; right:0; bottom:-6px; height:1px;
+    background:currentColor; transform:scaleX(0); transform-origin:left; transition:transform .32s cubic-bezier(.4,0,.1,1); }
+  header .nav a:hover{ opacity:1; }
+  header .nav a:hover::after{ transform:scaleX(1); }
+  @media (max-width:600px){
+    header{ padding:16px 20px; }
+    header .name svg{ width:118px; }
+    header .nav{ gap:13px; }
+    header .nav a{ font-size:9px; letter-spacing:.14em; padding-left:.14em; }
+    header .nav a::after{ left:.14em; }
+  }
+
+  #overture{ position:fixed; left:0; right:0; bottom:15vh; z-index:20; text-align:center; color:#faf8f2; padding:0 24px; }
+  #overture small{ display:block; font-size:11px; letter-spacing:.46em; text-transform:uppercase; opacity:.7; margin-bottom:18px; padding-left:.46em; }
+  #overture h1{ font-weight:400; font-size:clamp(38px,9vw,104px); letter-spacing:.16em; text-transform:uppercase; padding-left:.16em; text-shadow:0 4px 50px rgba(10,12,14,.35); }
+  /* logo com traço se desenhando (stroke-dashoffset) */
+  #overture .line-animation path{ stroke-dasharray:var(--len,4000); stroke-dashoffset:var(--len,4000); }
+  #overture .line-animation.drawing path{ animation:lineDraw 8s ease-in-out infinite; }
+  /* SÓ desenha pra frente (offset len->0); some por opacidade e reinicia invisível.
+     nunca recua o traço — o path tem 2 sub-voltas e recuar mostraria os 2 arcos separados. */
+  @keyframes lineDraw{
+    0%{ stroke-dashoffset:var(--len,4000); opacity:1; }   /* invisível (ainda não escrito) */
+    55%{ stroke-dashoffset:0; opacity:1; }                /* escreveu de ponta a ponta */
+    78%{ stroke-dashoffset:0; opacity:1; }                /* segura o logo cheio */
+    92%,100%{ stroke-dashoffset:0; opacity:0; }           /* some (fade) e reinicia invisível */
+  }
+  #hint{ position:fixed; left:50%; bottom:32px; transform:translateX(-50%); z-index:20; color:#666666; opacity:.7; font-size:12px; letter-spacing:.34em; text-transform:uppercase; padding-left:.34em; display:flex; flex-direction:column; align-items:center; gap:10px; }
+  #hint .bar2{ width:1px; height:42px; background:linear-gradient(#666666, transparent); }
+
+  /* cursor-guia de scroll: segue o mouse com inércia, some ao entrar na casa */
+  #scur{ position:fixed; top:0; left:0; z-index:55; pointer-events:none;
+    width:60px; height:60px; margin:-30px 0 0 -30px; opacity:0;
+    mix-blend-mode:difference; will-change:transform,opacity; }
+  #scur .ring{ position:absolute; inset:0; border:1px solid #faf8f2; border-radius:50%;
+    animation:scurPulse 3s ease-in-out infinite; }
+  #scur .lbl{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:#faf8f2; white-space:nowrap; padding-left:.1em; }
+  @keyframes scurPulse{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(1.09); opacity:.5; } }
+  @media (prefers-reduced-motion:reduce){ #scur .ring{ animation:none; } }
+
+  /* cursor: modos câmera ("ver imagens") e X (fechar) */
+  #scur .cam, #scur .cam-lbl, #scur .ex{ display:none; }
+  #scur .cam{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); }
+  #scur .cam svg{ display:block; width:24px; height:24px; }
+  #scur .cam-lbl{ position:absolute; left:50%; top:calc(100% + 8px); transform:translateX(-50%);
+    font-size:8px; letter-spacing:.16em; text-transform:uppercase; color:#faf8f2; white-space:nowrap; padding-left:.16em; }
+  #scur .ex{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:22px; line-height:1; color:#faf8f2; }
+  #scur.mode-scroll .lbl{ display:block; }
+  #scur.mode-cam .lbl{ display:none; }
+  #scur.mode-cam .cam, #scur.mode-cam .cam-lbl{ display:block; }
+  #scur.mode-x .lbl{ display:none; } #scur.mode-x .ex{ display:block; } #scur.mode-x .ring{ opacity:.4; }
+
+  /* bolinhas (hotspots ancorados no 3D) */
+  #hotspots{ position:fixed; inset:0; z-index:30; pointer-events:none; }
+  .hot-dot{ position:absolute; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:50%;
+    border:1.5px solid #fff; background:rgba(255,255,255,.2); box-shadow:0 2px 16px rgba(0,0,0,.4);
+    cursor:pointer; pointer-events:auto; opacity:0; transition:opacity .3s ease; }
+  .hot-dot::before{ content:''; position:absolute; inset:5px; border-radius:50%; background:#fff; }
+  .hot-dot::after{ content:''; position:absolute; inset:-5px; border-radius:50%; border:1px solid rgba(255,255,255,.55);
+    animation:hotPulse 2.2s ease-out infinite; }
+  @keyframes hotPulse{ 0%{ transform:scale(.75); opacity:.85; } 100%{ transform:scale(1.9); opacity:0; } }
+
+  /* caixa (título + texto + grid 2x2) */
+  #hotbox{ position:fixed; z-index:46; left:50%; bottom:8vh; transform:translateX(-50%) translateY(18px);
+    width:min(720px,94vw); background:rgba(247,245,240,.95); backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.6); box-shadow:0 30px 70px -30px rgba(20,22,20,.6);
+    padding:26px 28px 24px; opacity:0; pointer-events:none; transition:opacity .35s ease, transform .35s ease; }
+  #hotbox.on{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+  #hotbox .hb-body{ display:flex; gap:22px; align-items:center; max-height:70vh; overflow-y:auto; overflow-x:hidden; }
+  #hotbox .hb-main{ flex:1 1 0; min-width:0; }
+  #hotbox .hb-eyebrow{ font-size:10px; letter-spacing:.34em; text-transform:uppercase; color:var(--mute); margin-bottom:10px; padding-left:.34em; }
+  #hotbox h4{ font-family:var(--serif); font-style:italic; font-weight:400; font-size:27px; line-height:1.05; margin-bottom:12px; color:var(--ink); }
+  #hotbox .hb-text{ font-size:13.5px; line-height:1.6; color:#3a382f; margin-bottom:0; }
+  #hotbox .hb-grid{ flex:0 0 236px; display:grid; grid-template-columns:1fr 1fr; gap:8px; align-content:center; }
+  #hotbox .hb-grid[data-n="1"]{ grid-template-columns:1fr; }
+  #hotbox .hb-grid[data-n="0"]{ display:none; }
+  @media (max-width:600px){
+    #hotbox .hb-body{ flex-direction:column; gap:16px; align-items:stretch; max-height:66vh; }
+    #hotbox .hb-grid{ flex:none; }
+    #hotpop .hp-img{ width:92vw; }
+  }
+  #hotbox .hb-cell{ aspect-ratio:4/3; border-radius:4px; overflow:hidden; cursor:pointer; position:relative;
+    background:linear-gradient(135deg,#d3cdc1,#a49e92); transition:filter .25s ease; }
+  #hotbox .hb-cell img{ width:100%; height:100%; object-fit:cover; display:block; }
+  #hotbox .hb-cell .hb-n{ position:absolute; left:9px; bottom:7px; font-size:10px; letter-spacing:.22em; color:rgba(255,255,255,.92); text-shadow:0 1px 4px rgba(0,0,0,.4); }
+  #hotbox .hb-cell:hover{ filter:brightness(1.07); }
+  #hotbox .hb-close{ position:absolute; top:12px; right:14px; width:22px; height:22px; cursor:pointer; opacity:.5; transition:opacity .2s; }
+  #hotbox .hb-close:hover{ opacity:1; }
+  #hotbox .hb-close::before,#hotbox .hb-close::after{ content:''; position:absolute; left:50%; top:50%; width:14px; height:1.5px; background:var(--ink); }
+  #hotbox .hb-close::before{ transform:translate(-50%,-50%) rotate(45deg); }
+  #hotbox .hb-close::after{ transform:translate(-50%,-50%) rotate(-45deg); }
+
+  /* popup da imagem (overlay em blur + scroll travado) */
+  #hotpop{ position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .35s ease; cursor:pointer; }
+  #hotpop.on{ opacity:1; pointer-events:auto; }
+  #hotpop .hp-veil{ position:absolute; inset:0; background:rgba(12,12,14,.5); backdrop-filter:blur(16px); }
+  #hotpop .hp-img{ position:relative; width:min(72vw,960px); aspect-ratio:3/2; max-height:84vh; border-radius:6px; overflow:hidden;
+    background:linear-gradient(135deg,#d3cdc1,#8f897f); box-shadow:0 40px 130px -20px rgba(0,0,0,.75);
+    transform:scale(.94); transition:transform .35s ease; }
+  #hotpop.on .hp-img{ transform:scale(1); }
+  #hotpop .hp-img img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+  /* modal "Sobre mim" — mesmo blur do popup de imagens */
+  #aboutmodal{ position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center;
+    padding:24px; opacity:0; pointer-events:none; transition:opacity .35s ease; }
+  #aboutmodal.on{ opacity:1; pointer-events:auto; }
+  #aboutmodal .am-veil{ position:absolute; inset:0; background:rgba(12,12,14,.5); backdrop-filter:blur(16px); cursor:pointer; }
+  #aboutmodal .am-panel{ position:relative; overflow:hidden; border-radius:6px;
+    width:min(880px,100%); min-height:min(64vh,460px); max-height:88vh;
+    background:#efece5 url('public/fotos/renata-bg.png') no-repeat right center / cover;
+    border:1px solid rgba(255,255,255,.6);
+    box-shadow:0 40px 130px -20px rgba(0,0,0,.7); transform:scale(.94); transition:transform .35s ease; }
+  #aboutmodal.on .am-panel{ transform:scale(1); }
+  /* véu de papel: forte à esquerda (texto) -> transparente à direita (foto da Renata) */
+  #aboutmodal .am-panel::before{ content:''; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(100deg, rgba(247,245,240,.97) 0%, rgba(247,245,240,.93) 34%, rgba(247,245,240,.55) 52%, rgba(247,245,240,0) 74%); }
+  #aboutmodal .am-body{ position:relative; z-index:1; width:min(58%,470px); max-height:88vh; padding:clamp(30px,4vw,52px); overflow:auto; }
+  #aboutmodal .am-eyebrow{ font-size:10px; letter-spacing:.34em; text-transform:uppercase; color:var(--mute); margin-bottom:12px; padding-left:.34em; }
+  #aboutmodal h3{ font-family:var(--serif); font-style:italic; font-weight:400; font-size:clamp(30px,4vw,40px); line-height:1.02; margin-bottom:18px; color:var(--ink); }
+  #aboutmodal p{ font-size:14px; line-height:1.72; color:#3a382f; margin-bottom:15px; }
+  #aboutmodal .am-loc{ font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:var(--mute); margin-top:6px; margin-bottom:0; }
+  #aboutmodal .am-close{ position:absolute; top:12px; right:14px; z-index:2; width:30px; height:30px; border:0; padding:0;
+    background:rgba(247,245,240,.72); border-radius:50%; cursor:pointer; opacity:.75; transition:opacity .2s; }
+  #aboutmodal .am-close:hover{ opacity:1; }
+  #aboutmodal .am-close::before,#aboutmodal .am-close::after{ content:''; position:absolute; left:50%; top:50%; width:14px; height:1.5px; background:var(--ink); }
+  #aboutmodal .am-close::before{ transform:translate(-50%,-50%) rotate(45deg); }
+  #aboutmodal .am-close::after{ transform:translate(-50%,-50%) rotate(-45deg); }
+  @media (max-width:680px){
+    #aboutmodal .am-panel{ min-height:min(80vh,560px); max-height:88vh; background-position:right bottom; }
+    #aboutmodal .am-panel::before{ background:linear-gradient(180deg, rgba(247,245,240,.97) 0%, rgba(247,245,240,.9) 42%, rgba(247,245,240,.34) 74%, rgba(247,245,240,0) 100%); }
+    #aboutmodal .am-body{ width:100%; }
+  }
+
+  /* editor de hotspots (tecla H) */
+  #hotedit{ position:fixed; top:12px; left:12px; z-index:80; width:250px; max-height:94vh; overflow:auto;
+    font:11px/1.5 ui-monospace,monospace; color:#e7eaec; background:rgba(12,13,14,.93); padding:12px; border-radius:8px;
+    box-shadow:0 12px 46px rgba(0,0,0,.55); display:none; }
+  #hotedit .he-in{ width:100%; background:#1c1f21; border:1px solid #333; color:#e7eaec; border-radius:4px; padding:3px 5px; font:inherit; margin:2px 0; resize:vertical; }
+  #hotedit .he-btn{ background:#2a2d2f; border:1px solid #444; color:#e7eaec; border-radius:4px; cursor:pointer; padding:2px 8px; }
+  #hotedit .he-item{ border-top:1px solid #2a2d2f; padding:8px 0; }
+
+  #cards{ position:relative; z-index:20; height:640vh; pointer-events:none; }
+  .card{
+    position:fixed; z-index:20; width:min(390px, 84vw);
+    background:var(--card); backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.5);
+    box-shadow:0 30px 70px -30px rgba(20,22,20,.5);
+    padding:32px 34px; opacity:0; will-change:opacity, transform;
+    pointer-events:none;
+  }
+  .card .eyebrow{ font-size:10px; letter-spacing:.34em; text-transform:uppercase; color:var(--mute); margin-bottom:16px; padding-left:.34em; }
+  .card h3{ font-family:var(--serif); font-style:italic; font-weight:400; font-size:clamp(28px,4.2vw,40px); line-height:1; margin-bottom:20px; }
+  .card p{ font-size:14.5px; line-height:1.62; color:#3a382f; }
+
+  .card.left{ left:clamp(20px,5vw,54px); bottom:12vh; }
+  .card.right{ right:clamp(20px,5vw,54px); bottom:12vh; }
+  .card.center{ left:50%; bottom:13vh; transform:translateX(-50%); }
+
+  .plist{ list-style:none; }
+  .plist li{ display:flex; justify-content:space-between; align-items:baseline; padding:12px 0; border-top:1px solid var(--line); }
+  .plist li:last-child{ border-bottom:1px solid var(--line); }
+  .plist .pn{ font-size:15px; }
+  .plist .pn em{ display:block; font-family:var(--serif); font-style:italic; font-size:12.5px; color:var(--mute); margin-top:2px; }
+  .plist .py{ font-size:12px; letter-spacing:.16em; color:var(--mute); }
+
+  .steps{ list-style:none; counter-reset:s; }
+  .steps li{ padding:13px 0 13px 40px; position:relative; border-top:1px solid var(--line); font-size:14.5px; line-height:1.5; }
+  .steps li:before{ counter-increment:s; content:counter(s,decimal-leading-zero); position:absolute; left:0; top:14px; font-size:11px; letter-spacing:.1em; color:var(--mute); }
+  .steps li em{ font-family:var(--serif); font-style:italic; color:var(--mute); }
+
+  .card.contato a{ display:block; color:var(--ink); text-decoration:none; font-size:18px; letter-spacing:.02em; padding:11px 0; border-top:1px solid var(--line); transition:opacity .3s; }
+  .card.contato a:hover{ opacity:.55; }
+  .card.contato a:last-child{ border-bottom:1px solid var(--line); }
+  .card.contato a .k{ font-family:var(--poppins); font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:var(--mute); display:block; margin-bottom:3px; padding-left:.3em; }
+  .card.contato .say{ font-family:var(--serif); font-style:italic; font-size:17px; color:#3a382f; margin-bottom:20px; }
+
+  footer{
+    position:relative; z-index:20; background:#f2f0ea; color:var(--ink);
+    padding:clamp(60px,9vw,110px) clamp(20px,5vw,54px);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:24px; align-items:flex-end;
+    border-top:1px solid var(--line);
+  }
+  footer .big{ font-family:var(--serif); font-style:italic; font-size:clamp(30px,6vw,64px); line-height:1; }
+  footer .meta{ font-size:11px; letter-spacing:.24em; text-transform:uppercase; color:var(--mute); text-align:right; line-height:2; }
+
+  @media (max-width:760px){
+    header{ padding:18px 20px; }
+    .card{ width:88vw; padding:26px 26px; }
+    .card.left,.card.right{ left:6vw; right:auto; bottom:10vh; }
+    .card.center{ width:88vw; }
+    footer{ flex-direction:column; align-items:flex-start; }
+    footer .meta{ text-align:left; }
+  }
+  @media (prefers-reduced-motion:reduce){ #scene,.card{ transition:none; } }
+  :focus-visible{ outline:2px solid #6f7a80; outline-offset:3px; }
+</style>
+</head>
+<body>
+
+  <div id="scene"></div>
+
+  <div id="veil">
+    <div class="mark">
+      <svg width="284" height="53" viewBox="0 0 284 53" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15.1296 13.2095C17.9201 12.2014 19.635 9.83698 19.635 6.80222C19.635 2.47873 16.6678 0 11.4973 0H0V24.1663H2.51771V13.8954H8.9224C9.82659 13.8954 10.3696 13.9292 10.8633 14.015C13.607 14.4879 15.5116 16.2339 16.3664 19.053L17.8786 24.1637H20.5548L18.8919 18.6373C18.1462 16.1507 16.8834 14.3294 15.1322 13.2069L15.1296 13.2095ZM17.0549 6.80222C17.0549 8.23646 16.4781 11.5752 11.1387 11.5752H2.51771V2.35142H11.5622C16.3404 2.35142 17.0523 5.13934 17.0523 6.79962L17.0549 6.80222Z" fill="white"/>
+        <path d="M24.3612 24.1663H45.2044V21.8123H26.8789V12.9159H43.8351V10.5645H26.8789V2.35142H45.2044V0H24.3612V24.1663Z" fill="white"/>
+        <path d="M115.271 0H94.3165V2.35142H103.798V24.1663H106.315V2.35142H115.271V0Z" fill="white"/>
+        <path d="M67.8741 20.1287L51.6065 0H49.2784V24.1663H51.7961V4.10004L68.03 24.1663H70.3918V0H67.8741V20.1287Z" fill="white"/>
+        <path d="M84.1002 0.0286865L74.3126 24.247H77.0771L79.5221 17.7514H90.7751L93.2201 24.247H95.9846L86.1944 0.0286865H84.1002ZM89.7878 15.3999H80.5068L85.1473 3.89488L89.7878 15.3999Z" fill="white"/>
+        <path d="M123.394 0.0286865L113.603 24.247H116.368L118.813 17.7514H130.066L132.511 24.247H135.275L125.485 0.0286865H123.391H123.394ZM129.081 15.3999H119.803L124.443 3.89488L129.084 15.3999H129.081Z" fill="white"/>
+        <path d="M239.021 0.0727539H218.066V2.42677H227.547V24.2391H230.065V2.42677H239.021V0.0727539Z" fill="white"/>
+        <path d="M151.351 0.0727892H144.606V24.2391H151.74C160.458 24.2391 165.259 19.9468 165.259 12.1547C165.259 4.3625 160.45 0.0701904 151.351 0.0701904V0.0727892ZM162.679 12.1573C162.679 20.1988 156.662 21.8877 151.613 21.8877H147.123V2.4268H151.613C159.06 2.4268 162.679 5.60966 162.679 12.1573Z" fill="white"/>
+        <path d="M210.279 0.0727539V20.2014L194.011 0.0727539H191.683V24.2391H194.201V4.17539L210.435 24.2391H212.797V0.0727539H210.279Z" fill="white"/>
+        <path d="M176.063 0.10144L166.273 24.3197H169.037L171.482 17.8241H182.735L185.18 24.3197H187.945L178.154 0.10144H176.06H176.063ZM181.75 15.4727H172.469L177.11 3.96764L181.75 15.4727Z" fill="white"/>
+        <path d="M247.143 0.10144L237.353 24.3197H240.117L242.562 17.8241H253.815L256.26 24.3197H259.025L249.235 0.10144H247.14H247.143ZM252.831 15.4727H243.55L248.19 3.96764L252.831 15.4727Z" fill="white"/>
+        <path d="M276.243 10.8296L270.088 10.3541C266.004 10.0241 265.185 8.7276 265.185 6.73994C265.185 4.00138 267.981 2.42944 272.858 2.42944C277.226 2.42944 280.279 4.14948 280.276 6.67758V7.35053H282.729V6.26446C282.729 2.52038 278.842 0.104004 272.824 0.104004C263.956 0.104004 262.634 4.32096 262.634 6.83607C262.634 9.35118 263.826 12.3755 269.504 12.8354L275.659 13.3109C280.302 13.6721 280.941 15.3843 280.941 17.1797C280.941 20.2093 277.891 22.093 272.983 22.093C267.752 22.093 265.087 20.8303 265.055 18.3359L265.048 17.6734H262.6L262.605 18.8192C262.699 22.5373 266.18 24.421 272.949 24.421C279.717 24.421 283.49 21.7137 283.49 17.1823C283.49 14.5529 282.232 11.3155 276.241 10.8322L276.243 10.8296Z" fill="white"/>
+        <path d="M84.9654 49.9099L84.1859 48.0755H79.2701L78.5166 49.9099H76.903L80.855 40.8082H82.6244L86.5763 49.9099H84.9628H84.9654ZM81.728 42.1853L79.6728 47.0103H83.7806L81.7254 42.1853H81.728Z" fill="white"/>
+        <path d="M96.577 49.9098L96.1093 48.2054C95.7586 46.9712 95.122 46.371 94.249 46.2021C94.0541 46.1631 93.8722 46.1501 93.5864 46.1501H91.5442V49.9072H90.0216V40.8055H94.4958C96.3951 40.8055 97.8631 41.5071 97.8631 43.4324C97.8631 44.5626 97.2136 45.5525 95.8209 45.8384C97.0291 46.2541 97.4084 47.1635 97.6423 48.0754C97.6943 48.2703 98.084 49.6084 98.2139 49.9098H96.577ZM94.4049 45.0979C95.8209 45.0979 96.3042 44.3054 96.3042 43.461C96.3042 42.7075 95.8885 41.9384 94.4049 41.9384H91.5442V45.0979H94.4049Z" fill="white"/>
+        <path d="M101.61 45.3604C101.61 42.3438 103.626 40.6523 106.721 40.6523C109.815 40.6523 111.844 42.3438 111.844 45.3604C111.844 47.5845 110.701 49.0265 108.906 49.6007L111.662 50.9648C111.662 51.0687 111.649 52.3185 111.649 52.4094L107.136 50.0424C107.006 50.0554 106.863 50.0684 106.721 50.0684C103.626 50.0684 101.61 48.3769 101.61 45.3604ZM110.257 45.3604C110.257 42.9024 108.721 41.7722 106.721 41.7722C104.72 41.7722 103.197 42.9024 103.197 45.3604C103.197 47.8183 104.733 48.9486 106.721 48.9486C108.708 48.9486 110.257 47.8183 110.257 45.3604Z" fill="white"/>
+        <path d="M115.744 46.4516V40.8082H117.28V46.4386C117.28 48.1431 118.384 48.8966 120.05 48.8966C121.715 48.8966 122.832 48.1431 122.832 46.4386V40.8082H124.368V46.4516C124.368 48.8576 122.78 50.0658 120.05 50.0658C117.319 50.0658 115.744 48.8576 115.744 46.4516Z" fill="white"/>
+        <path d="M128.086 49.9099V48.7277H130.713V41.9904H128.086V40.8082H134.873V41.9904H132.233V48.7277H134.873V49.9099H128.086Z" fill="white"/>
+        <path d="M141.714 49.9099V42.0164H138.23V40.8082H146.734V42.0164H143.249V49.9099H141.714Z" fill="white"/>
+        <path d="M150.426 49.9099V40.8082H157.93V41.9904H151.948V44.6952H157.254V45.8125H151.948V48.7251H157.93V49.9073H150.426V49.9099Z" fill="white"/>
+        <path d="M164.797 49.9099V42.0164H161.312V40.8082H169.817V42.0164H166.332V49.9099H164.799H164.797Z" fill="white"/>
+        <path d="M173.431 46.4516V40.8082H174.964V46.4386C174.964 48.1431 176.071 48.8966 177.733 48.8966C179.396 48.8966 180.516 48.1431 180.516 46.4386V40.8082H182.049V46.4516C182.049 48.8576 180.462 50.0658 177.733 50.0658C175.005 50.0658 173.428 48.8576 173.428 46.4516H173.431Z" fill="white"/>
+        <path d="M192.871 49.9098L192.403 48.2054C192.052 46.9712 191.413 46.371 190.543 46.2021C190.348 46.1631 190.166 46.1501 189.88 46.1501H187.838V49.9072H186.315V40.8055H190.79C192.689 40.8055 194.157 41.5071 194.157 43.4324C194.157 44.5626 193.507 45.5525 192.115 45.8384C193.323 46.2541 193.702 47.1635 193.936 48.0754C193.988 48.2703 194.378 49.6084 194.508 49.9098H192.871ZM190.699 45.0979C192.115 45.0979 192.598 44.3054 192.598 43.461C192.598 42.7075 192.182 41.9384 190.699 41.9384H187.838V45.0979H190.699Z" fill="white"/>
+        <path d="M205.498 49.9099L204.719 48.0755H199.806L199.052 49.9099H197.439L201.39 40.8082H203.16L207.114 49.9099H205.501H205.498ZM202.261 42.1853L200.208 47.0103H204.316L202.261 42.1853Z" fill="white"/>
+        </svg>
+
+    </div>
+    <div class="veil-tip">Busque pelos <b>Pins</b> para conhecer mais sobre o projeto</div>
+    <div class="bar"><i id="loadbar"></i></div>
+    <div class="status" id="loadstatus">carregando o apartamento…</div>
+    <div class="status" style="opacity:.4; margin-top:6px; display: flex; align-items: center; gap: 4px">desenvolvido por <a href="https://dup.agency?utm-source=Renata-Dantas" target="_blank">
+      <svg width="89" height="15" viewBox="0 0 89 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M83.9864 14.5711C82.1765 14.5711 80.8575 13.8042 80.1672 12.3931L81.9618 11.4115C82.2992 12.071 82.9741 12.5772 83.9557 12.5772C85.2595 12.5772 86.011 11.6262 86.011 10.2151V10.0004C85.5969 10.6139 84.922 10.9513 83.9864 10.9513C81.517 10.9513 80.4433 9.37153 80.4433 7.11683V3.26697H82.5907V7.04014C82.5907 8.14448 83.1888 8.89605 84.2625 8.89605C85.2441 8.89605 85.9804 8.08313 85.9804 6.99412V3.26697H88.1891V10.1844C88.1891 12.8379 86.4865 14.5711 83.9864 14.5711Z" fill="white"/>
+<path d="M75.5243 11.0587C73.2389 11.074 71.4443 9.24881 71.4443 7.05546C71.4443 4.84678 73.2389 3.03688 75.5243 3.05222C76.9814 3.06756 78.3311 3.7271 79.0213 5.19955L77.2268 6.18119C76.8893 5.52165 76.2758 5.10752 75.5243 5.10752C74.4353 5.10752 73.6223 5.98179 73.6223 7.05546C73.6223 8.12913 74.4353 9.0034 75.5243 9.0034C76.2758 9.0034 76.8893 8.58927 77.2268 7.92973L79.0213 8.91137C78.3311 10.3838 76.9814 11.0434 75.5243 11.0587Z" fill="white"/>
+<path d="M66.019 5.1689C64.7919 5.1689 64.2397 6.16588 64.2397 7.33157V10.8593H62.0617V7.07082C62.0617 4.86214 63.3655 3.05225 66.019 3.05225C68.6724 3.05225 70.0069 4.8468 70.0069 7.07082V10.8593H67.8289V7.33157C67.8289 6.16588 67.2613 5.1689 66.019 5.1689Z" fill="white"/>
+<path d="M56.8624 11.0587C54.5003 11.0587 52.7211 9.41756 52.7211 6.99415C52.7211 4.8008 54.3162 2.99091 56.663 2.99091C59.071 2.99091 60.4668 4.77012 60.4668 6.84077V7.48496H54.8224C54.9758 8.49728 55.758 9.17215 56.847 9.17215C57.6753 9.17215 58.3655 8.77336 58.7183 8.06781L60.3901 8.91141C59.7306 10.2765 58.4729 11.0587 56.8624 11.0587ZM54.9144 6.27326H58.3041C58.2121 5.49101 57.5679 4.89283 56.6476 4.89283C55.6967 4.89283 55.0678 5.50635 54.9144 6.27326Z" fill="white"/>
+<path d="M46.9714 14.5558C45.1922 14.5558 43.8271 13.7736 43.1369 12.3625L44.9468 11.3808C45.2843 12.0404 45.9131 12.5619 46.9408 12.5619C48.2292 12.5619 49.1034 11.6569 49.1034 10.1691V10.0311C48.6893 10.5526 47.9531 10.9514 46.8794 10.9514C44.7474 10.9514 43.0449 9.29485 43.0449 7.04015C43.0449 4.8468 44.8241 3.05225 47.1555 3.05225C49.5329 3.05225 51.2814 4.75477 51.2814 7.04015V10.1078C51.2814 12.8073 49.4409 14.5558 46.9714 14.5558ZM47.1248 8.89606C48.2138 8.89606 49.0728 8.08314 49.0728 6.99413C49.0728 5.90513 48.2138 5.10755 47.1248 5.10755C46.0512 5.10755 45.1922 5.90513 45.1922 6.99413C45.1922 8.08314 46.0512 8.89606 47.1248 8.89606Z" fill="white"/>
+<path d="M37.1265 11.0587C34.9179 11.0587 33.3687 9.24885 33.3687 7.04017C33.3687 4.86216 35.1479 3.03693 37.4793 3.03693C39.8567 3.03693 41.6053 4.75479 41.6053 7.04017V10.8594H39.5346V9.96974C38.9978 10.6446 38.1695 11.0587 37.1265 11.0587ZM37.4793 9.01878C38.599 9.01878 39.4273 8.12917 39.4273 7.05551C39.4273 5.98184 38.599 5.09223 37.4793 5.09223C36.3596 5.09223 35.5467 5.98184 35.5467 7.05551C35.5467 8.12917 36.3596 9.01878 37.4793 9.01878Z" fill="white"/>
+<path d="M30.6886 11.0281C29.9371 11.0281 29.3389 10.4145 29.3389 9.6783C29.3389 8.94208 29.9371 8.32855 30.6886 8.32855C31.4249 8.32855 32.023 8.94208 32.023 9.6783C32.023 10.4145 31.4249 11.0281 30.6886 11.0281Z" fill="white"/>
+<path d="M20.6454 14.2797H19.6945V7.11685C19.6945 4.93884 21.4123 3.25165 23.6057 3.25165C25.8297 3.25165 27.5015 5.00019 27.5015 7.11685C27.5015 9.31019 25.845 11.0281 23.6363 11.0281C22.3786 11.0281 21.2743 10.3839 20.6454 9.41756V14.2797ZM23.6057 10.1231C25.2468 10.1231 26.5506 8.75802 26.5506 7.13218C26.5506 5.50635 25.2468 4.15659 23.6057 4.15659C21.9492 4.15659 20.6454 5.50635 20.6454 7.13218C20.6454 8.75802 21.9492 10.1231 23.6057 10.1231Z" fill="white"/>
+<path d="M13.7243 10.1078C15.3502 10.1078 16.2858 8.71205 16.2858 7.11689V3.42041H17.2368V7.22425C17.2368 9.37159 15.9177 11.0128 13.7243 11.0128C11.5617 11.0128 10.2579 9.35625 10.2579 7.20892V3.42041H11.2089V7.13223C11.2089 8.71205 12.1138 10.1078 13.7243 10.1078Z" fill="white"/>
+<path d="M3.89587 11.0281C1.67185 11.0281 0 9.27954 0 7.14755C0 4.9542 1.65651 3.25167 3.84986 3.25167C5.10758 3.25167 6.21192 3.89587 6.84079 4.84683L6.85612 0H7.80709V7.14755C7.80709 9.32556 6.08922 11.0281 3.89587 11.0281ZM3.89587 10.1231C5.55239 10.1231 6.85612 8.77338 6.85612 7.14755C6.85612 5.52171 5.55239 4.15662 3.89587 4.15662C2.2547 4.15662 0.950961 5.52171 0.950961 7.14755C0.950961 8.77338 2.2547 10.1231 3.89587 10.1231Z" fill="white"/>
+</svg>
+
+    </a></div>
+  </div>
+
+  <header>
+    <div class="name">
+      <svg width="284" height="53" viewBox="0 0 284 53" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15.1296 13.2095C17.9201 12.2014 19.635 9.83698 19.635 6.80222C19.635 2.47873 16.6678 0 11.4973 0H0V24.1663H2.51771V13.8954H8.9224C9.82659 13.8954 10.3696 13.9292 10.8633 14.015C13.607 14.4879 15.5116 16.2339 16.3664 19.053L17.8786 24.1637H20.5548L18.8919 18.6373C18.1462 16.1507 16.8834 14.3294 15.1322 13.2069L15.1296 13.2095ZM17.0549 6.80222C17.0549 8.23646 16.4781 11.5752 11.1387 11.5752H2.51771V2.35142H11.5622C16.3404 2.35142 17.0523 5.13934 17.0523 6.79962L17.0549 6.80222Z" fill="white"/>
+        <path d="M24.3612 24.1663H45.2044V21.8123H26.8789V12.9159H43.8351V10.5645H26.8789V2.35142H45.2044V0H24.3612V24.1663Z" fill="white"/>
+        <path d="M115.271 0H94.3165V2.35142H103.798V24.1663H106.315V2.35142H115.271V0Z" fill="white"/>
+        <path d="M67.8741 20.1287L51.6065 0H49.2784V24.1663H51.7961V4.10004L68.03 24.1663H70.3918V0H67.8741V20.1287Z" fill="white"/>
+        <path d="M84.1002 0.0286865L74.3126 24.247H77.0771L79.5221 17.7514H90.7751L93.2201 24.247H95.9846L86.1944 0.0286865H84.1002ZM89.7878 15.3999H80.5068L85.1473 3.89488L89.7878 15.3999Z" fill="white"/>
+        <path d="M123.394 0.0286865L113.603 24.247H116.368L118.813 17.7514H130.066L132.511 24.247H135.275L125.485 0.0286865H123.391H123.394ZM129.081 15.3999H119.803L124.443 3.89488L129.084 15.3999H129.081Z" fill="white"/>
+        <path d="M239.021 0.0727539H218.066V2.42677H227.547V24.2391H230.065V2.42677H239.021V0.0727539Z" fill="white"/>
+        <path d="M151.351 0.0727892H144.606V24.2391H151.74C160.458 24.2391 165.259 19.9468 165.259 12.1547C165.259 4.3625 160.45 0.0701904 151.351 0.0701904V0.0727892ZM162.679 12.1573C162.679 20.1988 156.662 21.8877 151.613 21.8877H147.123V2.4268H151.613C159.06 2.4268 162.679 5.60966 162.679 12.1573Z" fill="white"/>
+        <path d="M210.279 0.0727539V20.2014L194.011 0.0727539H191.683V24.2391H194.201V4.17539L210.435 24.2391H212.797V0.0727539H210.279Z" fill="white"/>
+        <path d="M176.063 0.10144L166.273 24.3197H169.037L171.482 17.8241H182.735L185.18 24.3197H187.945L178.154 0.10144H176.06H176.063ZM181.75 15.4727H172.469L177.11 3.96764L181.75 15.4727Z" fill="white"/>
+        <path d="M247.143 0.10144L237.353 24.3197H240.117L242.562 17.8241H253.815L256.26 24.3197H259.025L249.235 0.10144H247.14H247.143ZM252.831 15.4727H243.55L248.19 3.96764L252.831 15.4727Z" fill="white"/>
+        <path d="M276.243 10.8296L270.088 10.3541C266.004 10.0241 265.185 8.7276 265.185 6.73994C265.185 4.00138 267.981 2.42944 272.858 2.42944C277.226 2.42944 280.279 4.14948 280.276 6.67758V7.35053H282.729V6.26446C282.729 2.52038 278.842 0.104004 272.824 0.104004C263.956 0.104004 262.634 4.32096 262.634 6.83607C262.634 9.35118 263.826 12.3755 269.504 12.8354L275.659 13.3109C280.302 13.6721 280.941 15.3843 280.941 17.1797C280.941 20.2093 277.891 22.093 272.983 22.093C267.752 22.093 265.087 20.8303 265.055 18.3359L265.048 17.6734H262.6L262.605 18.8192C262.699 22.5373 266.18 24.421 272.949 24.421C279.717 24.421 283.49 21.7137 283.49 17.1823C283.49 14.5529 282.232 11.3155 276.241 10.8322L276.243 10.8296Z" fill="white"/>
+        <path d="M84.9654 49.9099L84.1859 48.0755H79.2701L78.5166 49.9099H76.903L80.855 40.8082H82.6244L86.5763 49.9099H84.9628H84.9654ZM81.728 42.1853L79.6728 47.0103H83.7806L81.7254 42.1853H81.728Z" fill="white"/>
+        <path d="M96.577 49.9098L96.1093 48.2054C95.7586 46.9712 95.122 46.371 94.249 46.2021C94.0541 46.1631 93.8722 46.1501 93.5864 46.1501H91.5442V49.9072H90.0216V40.8055H94.4958C96.3951 40.8055 97.8631 41.5071 97.8631 43.4324C97.8631 44.5626 97.2136 45.5525 95.8209 45.8384C97.0291 46.2541 97.4084 47.1635 97.6423 48.0754C97.6943 48.2703 98.084 49.6084 98.2139 49.9098H96.577ZM94.4049 45.0979C95.8209 45.0979 96.3042 44.3054 96.3042 43.461C96.3042 42.7075 95.8885 41.9384 94.4049 41.9384H91.5442V45.0979H94.4049Z" fill="white"/>
+        <path d="M101.61 45.3604C101.61 42.3438 103.626 40.6523 106.721 40.6523C109.815 40.6523 111.844 42.3438 111.844 45.3604C111.844 47.5845 110.701 49.0265 108.906 49.6007L111.662 50.9648C111.662 51.0687 111.649 52.3185 111.649 52.4094L107.136 50.0424C107.006 50.0554 106.863 50.0684 106.721 50.0684C103.626 50.0684 101.61 48.3769 101.61 45.3604ZM110.257 45.3604C110.257 42.9024 108.721 41.7722 106.721 41.7722C104.72 41.7722 103.197 42.9024 103.197 45.3604C103.197 47.8183 104.733 48.9486 106.721 48.9486C108.708 48.9486 110.257 47.8183 110.257 45.3604Z" fill="white"/>
+        <path d="M115.744 46.4516V40.8082H117.28V46.4386C117.28 48.1431 118.384 48.8966 120.05 48.8966C121.715 48.8966 122.832 48.1431 122.832 46.4386V40.8082H124.368V46.4516C124.368 48.8576 122.78 50.0658 120.05 50.0658C117.319 50.0658 115.744 48.8576 115.744 46.4516Z" fill="white"/>
+        <path d="M128.086 49.9099V48.7277H130.713V41.9904H128.086V40.8082H134.873V41.9904H132.233V48.7277H134.873V49.9099H128.086Z" fill="white"/>
+        <path d="M141.714 49.9099V42.0164H138.23V40.8082H146.734V42.0164H143.249V49.9099H141.714Z" fill="white"/>
+        <path d="M150.426 49.9099V40.8082H157.93V41.9904H151.948V44.6952H157.254V45.8125H151.948V48.7251H157.93V49.9073H150.426V49.9099Z" fill="white"/>
+        <path d="M164.797 49.9099V42.0164H161.312V40.8082H169.817V42.0164H166.332V49.9099H164.799H164.797Z" fill="white"/>
+        <path d="M173.431 46.4516V40.8082H174.964V46.4386C174.964 48.1431 176.071 48.8966 177.733 48.8966C179.396 48.8966 180.516 48.1431 180.516 46.4386V40.8082H182.049V46.4516C182.049 48.8576 180.462 50.0658 177.733 50.0658C175.005 50.0658 173.428 48.8576 173.428 46.4516H173.431Z" fill="white"/>
+        <path d="M192.871 49.9098L192.403 48.2054C192.052 46.9712 191.413 46.371 190.543 46.2021C190.348 46.1631 190.166 46.1501 189.88 46.1501H187.838V49.9072H186.315V40.8055H190.79C192.689 40.8055 194.157 41.5071 194.157 43.4324C194.157 44.5626 193.507 45.5525 192.115 45.8384C193.323 46.2541 193.702 47.1635 193.936 48.0754C193.988 48.2703 194.378 49.6084 194.508 49.9098H192.871ZM190.699 45.0979C192.115 45.0979 192.598 44.3054 192.598 43.461C192.598 42.7075 192.182 41.9384 190.699 41.9384H187.838V45.0979H190.699Z" fill="white"/>
+        <path d="M205.498 49.9099L204.719 48.0755H199.806L199.052 49.9099H197.439L201.39 40.8082H203.16L207.114 49.9099H205.501H205.498ZM202.261 42.1853L200.208 47.0103H204.316L202.261 42.1853Z" fill="white"/>
+      </svg>
+
+
+    </div>
+    <nav class="nav">
+      <a href="#sobre" id="navSobre">Sobre mim</a>
+      <a href="#projetos" data-scroll="0.16">Projetos</a>
+      <a href="#contato" data-scroll="0.95">Contato</a>
+    </nav>
+  </header>
+
+  <!-- modal "Sobre mim" (mesmo blur do popup de imagens) -->
+  <div id="aboutmodal" aria-hidden="true">
+    <div class="am-veil"></div>
+    <div class="am-panel" role="dialog" aria-modal="true" aria-label="Sobre mim">
+      <button class="am-close" aria-label="fechar"></button>
+      <div class="am-body">
+        <div class="am-eyebrow">arquitetura de interiores</div>
+        <h3>Sobre mim</h3>
+        <p>Sou <b>Renata Dantas</b>, arquiteta de interiores. Projeto espaços residenciais que equilibram função, luz natural e materiais honestos — casas que envelhecem bem e contam a história de quem mora nelas.</p>
+        <p>Meu trabalho nasce da escuta: antes de qualquer traço, entendo a rotina e a maneira como cada cliente ocupa o dia. A partir daí, cada ambiente é composto com atenção à proporção, à paleta e aos detalhes que só se percebem quando se vive o espaço.</p>
+        <p class="am-loc">joão pessoa · pb — do conceito ao acompanhamento de obra</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="overture">
+    <h1>
+      <div class="line-animation">
+        <svg width="569" height="479" viewBox="0 0 569 479" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M69.7763 318.356C44.2763 307.856 -3.82371 265.456 7.77629 179.856C22.2763 72.8562 45.7763 32.3562 96.2763 12.8562C146.776 -6.64377 320.276 18.3562 417.776 51.3562C515.276 84.3562 560.776 90.8562 561.776 125.856C562.776 160.856 492.776 264.356 488.276 270.356C483.776 276.356 449.776 306.356 390.276 314.856C330.776 323.356 200.276 336.356 114.276 327.856C52.6901 321.769 32.2446 291.356 32.7216 281.356M32.7216 281.356C33.073 273.99 35.5053 267.763 37.7763 264.356C45.7763 252.356 88.2763 188.356 116.776 179.856C145.276 171.356 262.276 144.356 361.276 145.356C460.276 146.356 555.776 139.356 561.776 257.856C567.776 376.356 520.276 440.356 500.776 451.856C481.276 463.356 460.776 485.356 306.276 463.356C151.776 441.356 17.7763 388.356 12.7763 367.356C7.77629 346.356 7.66695 304.856 32.7216 281.356Z" stroke="#dddddd" stroke-width="4"/>
+        </svg>
+
+      </div>
+      <svg width="940" height="174" style="max-width: 100%;" viewBox="0 0 940 174" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M50.1398 43.7765C59.3876 40.4356 65.0706 32.5999 65.0706 22.5427C65.0706 8.21455 55.2373 0 38.1021 0H0V80.0876H8.34371V46.0497H29.5689C32.5654 46.0497 34.3651 46.1617 36.0011 46.4458C45.0939 48.0129 51.4055 53.7993 54.2384 63.1418L59.2498 80.079H68.1188L62.608 61.7641C60.1367 53.5238 55.952 47.4877 50.1484 43.7679L50.1398 43.7765ZM56.5203 22.5427C56.5203 27.2957 54.6087 38.3604 36.9138 38.3604H8.34371V7.79263H38.3174C54.1523 7.79263 56.5116 17.0318 56.5116 22.534L56.5203 22.5427Z" fill="#333333"/>
+<path d="M80.7334 80.0876H149.808V72.2863H89.0771V42.8035H145.27V35.0109H89.0771V7.79263H149.808V0H80.7334V80.0876Z" fill="#333333"/>
+<path d="M382.011 0H312.566V7.79263H343.987V80.0876H352.33V7.79263H382.011V0Z" fill="#333333"/>
+<path d="M224.936 66.7066L171.025 0H163.309V80.0876H171.653V13.5876L225.452 80.0876H233.28V0H224.936V66.7066Z" fill="#333333"/>
+<path d="M278.709 0.0952148L246.273 80.355H255.435L263.537 58.8284H300.83L308.933 80.355H318.094L285.649 0.0952148H278.709ZM297.558 51.0358H266.801L282.179 12.9079L297.558 51.0358Z" fill="#333333"/>
+<path d="M408.928 0.0952148L376.483 80.355H385.645L393.747 58.8284H431.04L439.143 80.355H448.304L415.86 0.0952148H408.919H408.928ZM427.777 51.0358H397.028L412.407 12.9079L427.785 51.0358H427.777Z" fill="#333333"/>
+<path d="M792.119 0.241211H722.674V8.04245H754.094V80.3288H762.438V8.04245H792.119V0.241211Z" fill="#333333"/>
+<path d="M501.579 0.241278H479.225V80.3289H502.87C531.759 80.3289 547.671 66.1041 547.671 40.2808C547.671 14.4574 531.733 0.232666 501.579 0.232666V0.241278ZM539.121 40.2894C539.121 66.9393 519.179 72.5362 502.448 72.5362H487.569V8.04252H502.448C527.126 8.04252 539.121 18.5906 539.121 40.2894Z" fill="#333333"/>
+<path d="M696.868 0.241211V66.9479L642.957 0.241211H635.242V80.3288H643.585V13.8374L697.385 80.3288H705.212V0.241211H696.868Z" fill="#333333"/>
+<path d="M583.474 0.336182L551.029 80.596H560.191L568.294 59.0694H605.587L613.689 80.596H622.851L590.406 0.336182H583.466H583.474ZM602.323 51.2767H571.566L586.944 13.1488L602.323 51.2767Z" fill="#333333"/>
+<path d="M819.036 0.336182L786.591 80.596H795.753L803.855 59.0694H841.148L849.251 80.596H858.412L825.967 0.336182H819.027H819.036ZM837.884 51.2767H807.127L822.506 13.1488L837.884 51.2767Z" fill="#333333"/>
+<path d="M915.475 35.8895L895.076 34.3137C881.54 33.2202 878.828 28.9234 878.828 22.3363C878.828 13.2607 888.093 8.05125 904.255 8.05125C918.73 8.05125 928.847 13.7515 928.839 22.1297V24.3598H936.967V20.7606C936.967 8.35262 924.086 0.344727 904.143 0.344727C874.755 0.344727 870.372 14.3198 870.372 22.6549C870.372 30.99 874.325 41.0128 893.139 42.5369L913.538 44.1126C928.925 45.3095 931.043 50.9839 931.043 56.9339C931.043 66.9739 920.934 73.2166 904.669 73.2166C887.335 73.2166 878.501 69.0318 878.398 60.7656L878.372 58.5699H870.26L870.278 62.3672C870.588 74.689 882.126 80.9317 904.557 80.9317C926.987 80.9317 939.49 71.9594 939.49 56.9425C939.49 48.2285 935.322 37.4996 915.466 35.8981L915.475 35.8895Z" fill="#333333"/>
+<path d="M281.577 165.402L278.993 159.323H262.702L260.205 165.402H254.858L267.955 135.239H273.818L286.915 165.402H281.568H281.577ZM270.848 139.803L264.037 155.793H277.65L270.839 139.803H270.848Z" fill="#333333"/>
+<path d="M320.058 165.402L318.508 159.753C317.345 155.663 315.236 153.674 312.342 153.115C311.697 152.985 311.094 152.942 310.147 152.942H303.379V165.393H298.333V135.23H313.16C319.455 135.23 324.32 137.555 324.32 143.936C324.32 147.681 322.167 150.962 317.552 151.909C321.556 153.287 322.813 156.3 323.588 159.323C323.76 159.969 325.052 164.403 325.482 165.402H320.058ZM312.859 149.455C317.552 149.455 319.153 146.829 319.153 144.03C319.153 141.533 317.776 138.984 312.859 138.984H303.379V149.455H312.859Z" fill="#333333"/>
+<path d="M336.736 150.325C336.736 140.328 343.418 134.723 353.673 134.723C363.929 134.723 370.654 140.328 370.654 150.325C370.654 157.696 366.865 162.475 360.915 164.378L370.051 168.898C370.051 169.243 370.008 173.384 370.008 173.686L355.051 165.841C354.621 165.884 354.147 165.927 353.673 165.927C343.418 165.927 336.736 160.322 336.736 150.325ZM365.393 150.325C365.393 142.179 360.304 138.434 353.673 138.434C347.043 138.434 341.997 142.179 341.997 150.325C341.997 158.471 347.086 162.216 353.673 162.216C360.261 162.216 365.393 158.471 365.393 150.325Z" fill="#333333"/>
+<path d="M383.578 153.941V135.239H388.667V153.898C388.667 159.547 392.327 162.044 397.846 162.044C403.366 162.044 407.068 159.547 407.068 153.898V135.239H412.157V153.941C412.157 161.915 406.896 165.919 397.846 165.919C388.796 165.919 383.578 161.915 383.578 153.941Z" fill="#333333"/>
+<path d="M424.479 165.402V161.484H433.184V139.157H424.479V135.239H446.97V139.157H438.221V161.484H446.97V165.402H424.479Z" fill="#333333"/>
+<path d="M469.642 165.402V139.243H458.095V135.239H486.277V139.243H474.731V165.402H469.642Z" fill="#333333"/>
+<path d="M498.513 165.402V135.239H523.381V139.157H503.559V148.121H521.142V151.823H503.559V161.476H523.381V165.393H498.513V165.402Z" fill="#333333"/>
+<path d="M546.139 165.402V139.243H534.592V135.239H562.774V139.243H551.228V165.402H546.147H546.139Z" fill="#333333"/>
+<path d="M574.752 153.941V135.239H579.832V153.898C579.832 159.547 583.5 162.044 589.011 162.044C594.522 162.044 598.233 159.547 598.233 153.898V135.239H603.313V153.941C603.313 161.915 598.052 165.919 589.011 165.919C579.97 165.919 574.743 161.915 574.743 153.941H574.752Z" fill="#333333"/>
+<path d="M639.177 165.402L637.627 159.753C636.464 155.663 634.346 153.674 631.461 153.115C630.816 152.985 630.213 152.942 629.266 152.942H622.498V165.393H617.452V135.23H632.279C638.574 135.23 643.439 137.555 643.439 143.936C643.439 147.681 641.286 150.962 636.671 151.909C640.675 153.287 641.932 156.3 642.707 159.323C642.879 159.969 644.171 164.403 644.601 165.402H639.177ZM631.978 149.455C636.671 149.455 638.273 146.829 638.273 144.03C638.273 141.533 636.895 138.984 631.978 138.984H622.498V149.455H631.978Z" fill="#333333"/>
+<path d="M681.024 165.402L678.441 159.323H662.158L659.661 165.402H654.314L667.411 135.239H673.275L686.38 165.402H681.033H681.024ZM670.295 139.803L663.493 155.793H677.106L670.295 139.803Z" fill="#333333"/>
+</svg>
+
+
+    </h1>
+  </div>
+  <div id="hint"><span>scroll</span><span class="bar2"></span></div>
+  <div id="scur" aria-hidden="true"><span class="ring"></span><span class="lbl">scroll</span><span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="#faf8f2" stroke-width="1.5" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.1-1.7A1 1 0 0 1 9.9 4.8h4.2a1 1 0 0 1 .8.5L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z"/><circle cx="12" cy="12.8" r="3.1"/></svg></span><span class="cam-lbl">ver imagens</span><span class="ex">✕</span></div>
+
+  <div id="cards">
+    <div class="card left" data-a="0.08" data-b="0.24">
+      <div class="eyebrow">projetos</div>
+      <h3>obras recentes</h3>
+      <ul class="plist">
+        <li><div class="pn">Apartamento Cabo Branco<em>reforma integral · 128m²</em></div><div class="py">Em breve</div></li>
+        <li><div class="pn">Cobertura Altiplano<em>projeto de interiores</em></div><div class="py">Em breve</div></li>
+        <li><div class="pn">Studio Tambaú<em>apartamento compacto · 42m²</em></div><div class="py">Em breve</div></li>
+      </ul>
+    </div>
+
+    <div class="card right" data-a="0.36" data-b="0.54">
+      <div class="eyebrow">processo</div>
+      <h3>como nasce</h3>
+      <ul class="steps">
+        <li><em>escuta.</em> entender a rotina, a família e a luz antes de qualquer traço.</li>
+        <li><em>estudo.</em> planta, marcenaria e materiais desenhados juntos, não em sequência.</li>
+        <li><em>obra.</em> acompanhamento de perto até o espaço ficar pronto pra ser vivido.</li>
+      </ul>
+    </div>
+
+    <div class="card left" data-a="0.62" data-b="0.80">
+      <div class="eyebrow">Quem somos</div>
+      <h3>quem assina</h3>
+      <p>Renata Dantas desenha apartamentos como quem organiza a luz do dia. Cada projeto começa pela forma como você vive o espaço — e termina num lugar que parece ter sido sempre assim. Atendimento próximo, do primeiro estudo à última tomada instalada.</p>
+    </div>
+
+    <div class="card contato center" data-a="0.90" data-b="1.0">
+      <div class="eyebrow">Contato</div>
+      <h3>atende</h3>
+      <div class="say">Todo projeto começa com uma conversa longa.</div>
+      <a href="mailto:estudio@renatadantas.arq"><span class="k">e-mail</span>contato@renatadantas.com</a>
+      <a href="tel:+5583999990000"><span class="k">telefone</span>+55 83 99903-4626</a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="big">Renata Dantas</div>
+    <div class="meta">arquitetura de interiores<br>joão pessoa · pb<br> projeto de estudio — modelo real do Apto 117</div>
+  </footer>
+
+  <!-- three.js core + loaders -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+  (function(){
+    const mount = document.getElementById('scene');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const small = innerWidth < 760;
+    const loadbar = document.getElementById('loadbar');
+    const loadstatus = document.getElementById('loadstatus');
+    const veil = document.getElementById('veil');
+    const veilT0 = performance.now();  // início: usado pra segurar o loader no mínimo 7s
+
+    // modo debug de carregamento (hash + diagnóstico de texturas). Caro num GLB de 29MB,
+    // então só roda se a URL tiver ?debug — o load normal vai direto pro parse.
+    const DEBUG_LOAD = /[?&](debug|diag)/.test(location.search);
+    if (!DEBUG_LOAD){ const lh=document.getElementById('livehash'); if(lh) lh.style.display='none'; }
+
+    // const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+    const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance', logarithmicDepthBuffer:true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    renderer.shadowMap.enabled = !small;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    mount.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xdfe3e5);
+
+    // const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.05, 300);
+    const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 40);
+
+    // ---------- enquadramento responsivo (só no retrato/mobile) ----------
+    // O fov do three.js é VERTICAL. No desktop (deitado, aspect>1) o campo horizontal fica largo.
+    // No celular em pé (aspect ~0.46) o campo horizontal DESABA e os pins das laterais somem do
+    // quadro. Compensamos SÓ no retrato — o desktop não é tocado — de um jeito que NÃO move a
+    // câmera (afastar/dollyar atravessa móvel e parede em interior apertado):
+    //   • alarga o fov (com teto pra não distorcer) pra recuperar um pouco de campo horizontal;
+    //   • GIRA a mira na direção dos pins da parada atual, centralizando-os no quadro estreito.
+    // Como a câmera não sai do lugar, nunca clipa. Pra calibrar, mexa nesses dois:
+    const FOV_BASE          = 50;     // fov vertical do desktop (o mesmo do construtor acima)
+    const ASPECT_REF        = 16/9;   // aspect em que o enquadramento foi desenhado (desktop)
+    const FOV_PORTRAIT_MAX  = 64;     // teto do fov vertical no retrato (acima disso distorce)
+    const MOBILE_AIM        = 0.75;   // 0 = desliga; 1 = mira 100% nos pins da parada (0.75 = 75%)
+    const PORTRAIT_AT       = 1.0;    // é "retrato" quando innerWidth/innerHeight < isso
+
+    const isPortrait = () => (innerWidth/innerHeight) < PORTRAIT_AT;
+
+    function applyCameraFraming(){
+      const aspect = innerWidth/innerHeight;
+      camera.aspect = aspect;
+      if (isPortrait()){
+        // fov vertical que preserva o fov horizontal do desktop nesse aspect, limitado pelo teto
+        const hFov = 2*Math.atan(Math.tan(FOV_BASE*Math.PI/360) * ASPECT_REF);
+        const vFov = 2*Math.atan(Math.tan(hFov/2) / aspect) * 180/Math.PI;
+        camera.fov = Math.min(vFov, FOV_PORTRAIT_MAX);
+      } else {
+        camera.fov = FOV_BASE;
+      }
+      camera.updateProjectionMatrix();
+    }
+    applyCameraFraming();
+
+    // environment simples pra reflexos
+    (function(){
+      const c=document.createElement('canvas'); c.width=16; c.height=256;
+      const x=c.getContext('2d'); const g=x.createLinearGradient(0,0,0,256);
+      g.addColorStop(0,'#f3f5f6'); g.addColorStop(.5,'#dfe1e0'); g.addColorStop(.52,'#c8c6c0'); g.addColorStop(1,'#8f8b83');
+      x.fillStyle=g; x.fillRect(0,0,16,256);
+      const t=new THREE.CanvasTexture(c); t.mapping=THREE.EquirectangularReflectionMapping;
+      const p=new THREE.PMREMGenerator(renderer); scene.environment=p.fromEquirectangular(t).texture; t.dispose(); p.dispose();
+    })();
+
+    scene.add(new THREE.HemisphereLight(0xf2f1ec, 0x6b6459, 0.35));  // intensidade menor + chão do hemisfério mais escuro = mais contraste
+    scene.add(new THREE.AmbientLight(0xffffff, 0.10)); 
+    const sun = new THREE.DirectionalLight(0xfff3e2, 3.0);
+    sun.castShadow=!small;
+    sun.shadow.mapSize.set(2048,2048);
+    sun.shadow.camera.near=1; sun.shadow.camera.far=60;
+    scene.add(sun); scene.add(sun.target);
+
+    // ---------- diagnóstico: testa cada textura embutida com createImageBitmap real ----------
+    // Faz o parse manual do container GLB (spec: header 12 bytes, depois chunks JSON e BIN)
+    // pra isolar exatamente qual textura falha no decode do NAVEGADOR, não em ferramenta node.
+    async function diagnosticarTexturas(arrayBuffer){
+      const dv = new DataView(arrayBuffer);
+      const magic = dv.getUint32(0, true);
+      if (magic !== 0x46546C67) { console.warn('não é um glb binário válido (magic mismatch)'); return null; }
+      let offset = 12;
+      let jsonChunk = null, binChunk = null;
+      while (offset < arrayBuffer.byteLength) {
+        const chunkLength = dv.getUint32(offset, true);
+        const chunkType = dv.getUint32(offset+4, true);
+        const chunkData = arrayBuffer.slice(offset+8, offset+8+chunkLength);
+        if (chunkType === 0x4E4F534A) jsonChunk = chunkData; // 'JSON'
+        else if (chunkType === 0x004E4942) binChunk = chunkData; // 'BIN\0'
+        offset += 8 + chunkLength;
+      }
+      if (!jsonChunk || !binChunk) { console.warn('glb sem JSON ou BIN chunk'); return null; }
+
+      const json = JSON.parse(new TextDecoder().decode(jsonChunk));
+      const images = json.images || [];
+      const bufferViews = json.bufferViews || [];
+      const materials = json.materials || [];
+
+      // mapear qual material usa qual texture index (pra reportar nome legível)
+      function materialUsandoTextura(texIndex){
+        for (let mi=0; mi<materials.length; mi++){
+          const m = materials[mi];
+          const refs = [];
+          if (m.pbrMetallicRoughness?.baseColorTexture) refs.push(m.pbrMetallicRoughness.baseColorTexture.index);
+          if (m.normalTexture) refs.push(m.normalTexture.index);
+          if (m.emissiveTexture) refs.push(m.emissiveTexture.index);
+          if (m.extensions?.KHR_materials_pbrSpecularGlossiness?.diffuseTexture) refs.push(m.extensions.KHR_materials_pbrSpecularGlossiness.diffuseTexture.index);
+          if (refs.includes(texIndex)) return m.name || ('material #' + mi);
+        }
+        return '(nenhum material referencia direto)';
+      }
+
+      let ok = 0, fail = [];
+      for (let i=0;i<images.length;i++){
+        const img = images[i];
+        if (img.bufferView === undefined) continue; // imagem por URI externa, não é o caso aqui
+        const bv = bufferViews[img.bufferView];
+        const bytes = binChunk.slice(bv.byteOffset||0, (bv.byteOffset||0)+bv.byteLength);
+        const mime = img.mimeType || 'image/png';
+        try{
+          const bitmap = await createImageBitmap(new Blob([bytes], {type: mime}));
+          bitmap.close();
+          ok++;
+        }catch(e){
+          fail.push({ index:i, mime, bytes: bytes.byteLength, erro: e.message, material: materialUsandoTextura(i) });
+        }
+      }
+      return { total: images.length, ok, fail };
+    }
+
+    // ---------- carregar o modelo (glb servido via HTTP) ----------
+    const dracoLoader = new THREE.DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    const gltfLoader = new THREE.GLTFLoader();
+    gltfLoader.setDRACOLoader(dracoLoader);
+
+    let modelRoot = null;
+    let bbox = null, bcenter = null, bsize = null;
+    let diagResult = null;
+
+    loadstatus.textContent = 'baixando o apartamento…';
+    loadbar.style.width = '20%';
+
+    // ?opt carrega a versão otimizada (merge de meshes + material metal-rough) pra comparar
+    const GLB = 'apto-117.opt.glb'; // versão final (material metal-rough + limpeza); original guardado como backup
+    fetch(GLB)
+      .then(res => {
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' ao buscar ' + GLB + ' — confira se o arquivo está na mesma pasta e se está servindo via http(s), não file://.');
+        return res.arrayBuffer();
+      })
+      .then(async arrayBuffer => {
+        // hash + diagnóstico de texturas só em modo debug (?debug): num GLB de 29MB isso
+        // clona o arquivo inteiro e redecodifica todas as texturas antes de montar — a "trava".
+        if (DEBUG_LOAD) {
+          loadbar.style.width = '35%';
+          loadstatus.textContent = 'conferindo integridade do arquivo…';
+
+          // hash real dos bytes que o navegador de fato recebeu — nada de confiar em texto estático
+          try{
+            const digest = await crypto.subtle.digest('SHA-256', arrayBuffer);
+            const hex = [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,16);
+            const tag = document.getElementById('livehash');
+            if (tag) tag.textContent = 'sha256 real do arquivo recebido: ' + hex + ' (' + (arrayBuffer.byteLength/1024/1024).toFixed(2) + ' MB)';
+            console.log('SHA-256 real (primeiros 16 hex):', hex, '| tamanho:', arrayBuffer.byteLength);
+          }catch(e){ console.warn('não consegui calcular hash:', e); }
+
+          loadbar.style.width = '45%';
+          loadstatus.textContent = 'testando texturas (diagnóstico)…';
+
+          diagResult = await diagnosticarTexturas(arrayBuffer.slice(0));
+          if (diagResult) {
+            console.log('DIAGNÓSTICO DE TEXTURAS:', diagResult);
+            if (diagResult.fail.length) {
+              console.error(diagResult.fail.length + ' de ' + diagResult.total + ' texturas falharam no createImageBitmap deste navegador:');
+              diagResult.fail.forEach(f => console.error(
+                '  índice ' + f.index + ' · ' + f.mime + ' · ' + f.bytes + ' bytes · material: ' + f.material + ' · erro: ' + f.erro
+              ));
+            } else {
+              console.log('todas as ' + diagResult.total + ' texturas passaram no teste direto de createImageBitmap.');
+            }
+          }
+        }
+
+        loadbar.style.width = '70%';
+        loadstatus.textContent = 'montando o apartamento…';
+        gltfLoader.parse(arrayBuffer, '', (gltf) => {
+          modelRoot = gltf.scene;
+          modelRoot.traverse(o=>{
+            if (o.isMesh){
+              o.castShadow = !small;
+              o.receiveShadow = true;
+              if (o.material) {
+                const mats = Array.isArray(o.material) ? o.material : [o.material];
+                // mats.forEach(m=>{ if(m) m.envMapIntensity = 0.6; });
+                mats.forEach(m=>{ if(m) m.envMapIntensity = Math.min(m.envMapIntensity ?? 1, 0.45); })
+              }
+            }
+          });
+
+          bbox = new THREE.Box3().setFromObject(modelRoot);
+          bcenter = bbox.getCenter(new THREE.Vector3());
+          bsize = bbox.getSize(new THREE.Vector3());
+
+          scene.add(modelRoot);
+
+          sun.target.position.copy(bcenter);
+          sun.position.set(bcenter.x - bsize.x*1.6, bcenter.y + bsize.y*1.4, bcenter.z + bsize.z*0.9);
+          const S = Math.max(bsize.x, bsize.z) * 0.9;
+          Object.assign(sun.shadow.camera, {left:-S, right:S, top:S, bottom:-S});
+          sun.shadow.bias = -0.0004;
+
+          loadbar.style.width = '100%';
+          loadstatus.textContent = 'pronto';
+          buildCameraPath();
+          // aquece o pipeline ATRÁS da veil: 1 render pesado (compila os 271 shaders,
+          // sobe as 151 texturas, gera a sombra) enquanto a tela de load ainda cobre —
+          // aí a "trava" acontece escondida, não na cara do usuário.
+          camAt(0);
+          renderer.render(scene, camera);
+          // cena estática (só a câmera anda): congela o shadow map em vez de recalcular
+          // 2048² sobre 1,94M triângulos a cada frame. Ganho enorme de FPS.
+          renderer.shadowMap.autoUpdate = false;
+          setTimeout(()=> veil.classList.add('gone'), Math.max(400, 5000 - (performance.now()-veilT0)));  // loader fica ativo no mínimo 7s
+          tick();
+        }, (err) => {
+          if (diagResult && diagResult.fail.length) {
+            const f = diagResult.fail[0];
+            loadstatus.textContent = 'textura #' + f.index + ' (' + f.mime + ', ' + f.material + ') não decodifica neste navegador — ' + diagResult.fail.length + ' de ' + diagResult.total + ' falharam.';
+          } else {
+            const msg = (err && (err.message || err.name)) ? (err.name ? err.name+': '+ (err.message||'') : err.message) : String(err);
+            loadstatus.textContent = 'erro: ' + msg + (DEBUG_LOAD ? ' (diagnóstico não achou textura ruim — pode ser outra causa, veja console)' : ' (abra com ?debug pra diagnosticar textura por textura)');
+          }
+          console.error('Falha ao carregar o modelo:', err);
+        });
+      })
+      .catch(err => {
+        loadstatus.textContent = 'erro: ' + err.message;
+        console.error(err);
+      });
+
+    // ---------- percurso guiado pela bbox REAL do modelo (duplex + mezanino) ----------
+    let K = [];
+    const seg = [0, 0.16, 0.32, 0.48, 0.64, 0.80, 1.0];
+
+    // ---------- "segurada" em cada parada (scroll travadinho) ----------
+    // Sem isso o scroll é linear e uma puxada passa por várias paradas direto. Aqui a gente
+    // achata a curva perto de cada keyframe: uma faixa da rolagem fica PRESA no stop (a segurada)
+    // e a transição pro próximo acontece rápido no meio do trecho. O 'cur' continua suavizando o
+    // movimento, então a câmera desliza macio — só ganha um respiro em cada parada.
+    const HOLD = 0.55;   // 0 = scroll linear (sem trava); ~0.8 = bem travadinho/encaixe em cada parada
+    function warpScroll(u){
+      const n = seg.length;                       // nº de paradas (keyframes)
+      const f = u*(n-1);                          // posição em "unidades de parada" (0..n-1)
+      const i = Math.min(n-2, Math.floor(f));     // trecho atual
+      const t = f - i;                            // 0..1 dentro do trecho
+      const a = HOLD*0.5, b = 1 - HOLD*0.5;       // platôs nas duas pontas do trecho
+      let tt;
+      if (t <= a) tt = 0;                         // preso no stop i (segurada)
+      else if (t >= b) tt = 1;                    // preso no stop i+1 (segurada)
+      else { const s=(t-a)/(b-a); tt = s*s*(3-2*s); }  // transição suave no meio
+      return seg[i] + (seg[i+1]-seg[i])*tt;       // progresso real (mesma escala do camAt)
+    }
+
+    function buildCameraPath(){
+      const min = bbox.min, max = bbox.max;
+      const groundY = min.y + Math.min(1.65, bsize.y*0.2);   // altura de olho no térreo
+      const mezzY   = min.y + bsize.y*0.62;                   // altura de olho no mezanino
+      const zFront = max.z - bsize.z*0.06;  // entrada (perto do fim "z max")
+      const zBack  = min.z + bsize.z*0.08;  // fundo do duplex
+      const xMid   = bcenter.x;
+      const xL     = min.x + bsize.x*0.22;
+      const xR     = max.x - bsize.x*0.22;
+
+      K = [
+        { p:new THREE.Vector3(2.16, 4.14, 4.75), l:new THREE.Vector3(2.16, 1.51, -0.37) },
+        { p:new THREE.Vector3(0.86, 1.51, -1.3), l:new THREE.Vector3(2.16, 1.51, -3.16) },
+        { p:new THREE.Vector3(3.45, 1.51, -3.35), l:new THREE.Vector3(0.86, 1.51, -5.02) },
+        { p:new THREE.Vector3(1.26, 1.51, -6.19), l:new THREE.Vector3(3.45, 1.51, -6.15) },
+        { p:new THREE.Vector3(2.16, 4.67, -5.76), l:new THREE.Vector3(9.16, 4.67, 4.49) },
+        { p:new THREE.Vector3(1.05, 4.67, -6.67), l:new THREE.Vector3(4.36, 4.67, 0.63) },
+        { p:new THREE.Vector3(3.57, 4.15, -4.27), l:new THREE.Vector3(-35.84, 10.37, 5.13) },
+      ];
+      if (dbgGroup) buildDebugPath(); // reconstrói o trilho de debug se ele já existir
+    }
+
+    const smooth = t => t*t*(3-2*t);
+    const tp=new THREE.Vector3(), tl=new THREE.Vector3(), lk=new THREE.Vector3();
+    const _aim=new THREE.Vector3();
+    let dbgI=0, dbgT=0; // trecho e progresso atuais, só pra HUD de debug
+
+    // no retrato: gira a mira (o alvo 'tl') na direção do centróide dos pins da parada mais
+    // próxima, pra eles caberem no quadro estreito SEM afastar a câmera (nada de clipping).
+    // O peso só sobe perto da parada — onde os pins de fato aparecem —, então entre paradas
+    // o trajeto continua o desenhado.
+    function aimAtStopPins(pr){
+      let ns=0,best=1e9; for(let k=0;k<seg.length;k++){ const d=Math.abs(pr-seg[k]); if(d<best){best=d;ns=k;} }
+      const w=THREE.MathUtils.clamp(1-best/0.10,0,1);
+      if (w<=0 || !HOTS.length) return;
+      let n=0; _aim.set(0,0,0);
+      for (let j=0;j<HOTS.length;j++){ if(HOTS[j].stop===ns){ _aim.add(HOTS[j].pos); n++; } }
+      if (!n) return;                       // parada sem pin: mira original
+      _aim.multiplyScalar(1/n);             // centróide dos pins da parada
+      tl.lerp(_aim, MOBILE_AIM*smooth(w));  // gira o alvo até os pins (câmera não sai do lugar)
+    }
+
+    function camAt(pr){
+      if (!K.length) return;
+      let i=0; while(i<seg.length-2 && pr>seg[i+1]) i++;
+      const rawT=THREE.MathUtils.clamp((pr-seg[i])/(seg[i+1]-seg[i]),0,1);
+      const t=smooth(rawT);
+      dbgI=i; dbgT=rawT;
+      tp.lerpVectors(K[i].p,K[i+1].p,t); tl.lerpVectors(K[i].l,K[i+1].l,t);
+      if (MOBILE_AIM>0 && isPortrait()) aimAtStopPins(pr);  // só no retrato; não move a câmera
+      camera.position.copy(tp); lk.copy(tl); camera.lookAt(lk);
+    }
+
+    // ---------- DEBUG do trilho (aperte a tecla D pra ligar/desligar) ----------
+    // Desenha o caminho da câmera DENTRO da cena, por cima do modelo:
+    //   • linha + bolas VERMELHAS = as posições "p" (por onde a câmera passa)
+    //   • bolas VERDES            = os alvos "l" (pra onde ela olha)
+    //   • número flutuante        = o índice do keyframe K[n]
+    // Assim você enxerga exatamente a reta vermelha furando a pilastra e sabe
+    // qual K[n] mexer. O HUD embaixo mostra as coordenadas ao vivo enquanto rola.
+    let dbgOn=false, dbgGroup=null, hud=null, panel=null, dbgLock=false, dbgScrubEl=null;
+    let controls=null, freeCam=false, selKf=0;      // câmera livre (arrastar)
+    let dbgPs=[], dbgLs=[], dbgLbls=[], dbgLine=null; // refs dos marcadores pra mover barato
+    function makeLabel(txt){
+      const c=document.createElement('canvas'); c.width=64; c.height=64;
+      const x=c.getContext('2d'); x.fillStyle='#ff3b30';
+      x.beginPath(); x.arc(32,32,30,0,Math.PI*2); x.fill();
+      x.fillStyle='#fff'; x.font='bold 34px monospace'; x.textAlign='center'; x.textBaseline='middle';
+      x.fillText(txt,32,34);
+      const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c), depthTest:false}));
+      sp.renderOrder=1000; return sp;
+    }
+    function buildDebugPath(){
+      if (dbgGroup){
+        scene.remove(dbgGroup);
+        dbgGroup.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material){ if(o.material.map) o.material.map.dispose(); o.material.dispose(); } });
+      }
+      dbgGroup=new THREE.Group();
+      dbgPs=[]; dbgLs=[]; dbgLbls=[]; dbgLine=null;
+      const r=bsize.length();
+      dbgLine=new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(K.map(k=>k.p.clone())),
+        new THREE.LineBasicMaterial({color:0xff3b30, depthTest:false})
+      );
+      dbgLine.renderOrder=999; dbgGroup.add(dbgLine);
+      K.forEach((k,idx)=>{
+        const sp=new THREE.Mesh(new THREE.SphereGeometry(r*0.009,16,16),
+          new THREE.MeshBasicMaterial({color:0xff3b30, depthTest:false}));
+        sp.position.copy(k.p); sp.renderOrder=999; dbgGroup.add(sp); dbgPs[idx]=sp;
+        const tg=new THREE.Mesh(new THREE.SphereGeometry(r*0.006,12,12),
+          new THREE.MeshBasicMaterial({color:0x34c759, depthTest:false}));
+        tg.position.copy(k.l); tg.renderOrder=999; dbgGroup.add(tg); dbgLs[idx]=tg;
+        const lb=makeLabel(String(idx)); lb.position.copy(k.p).y+=r*0.02;
+        lb.scale.setScalar(r*0.03); dbgGroup.add(lb); dbgLbls[idx]=lb;
+      });
+      dbgGroup.visible=dbgOn; scene.add(dbgGroup);
+    }
+    // move só os marcadores de um keyframe (barato, roda a cada frame durante o arrasto)
+    function updateKfMarker(idx){
+      if (!dbgGroup || !dbgPs[idx]) return;
+      const k=K[idx], r=bsize.length();
+      dbgPs[idx].position.copy(k.p);
+      dbgLs[idx].position.copy(k.l);
+      dbgLbls[idx].position.copy(k.p); dbgLbls[idx].position.y+=r*0.02;
+      if (dbgLine){
+        const pos=dbgLine.geometry.attributes.position;
+        pos.setXYZ(idx, k.p.x, k.p.y, k.p.z); pos.needsUpdate=true;
+      }
+    }
+
+    // ---------- CÂMERA LIVRE: arraste pra posicionar o keyframe selecionado ----------
+    // Clica "✋ arrastar" num K → o OrbitControls assume a câmera daquele keyframe:
+    //   arrastar = girar em torno do alvo (l) · botão direito = deslocar · roda = aproximar.
+    // A cada frame o p/l do K são regravados com a câmera atual, os campos e as bolinhas
+    // do trilho acompanham ao vivo. "sair" volta pro scroll normal.
+    function ensureControls(){
+      if (controls) return controls;
+      if (typeof THREE.OrbitControls!=='function') return null;
+      controls=new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping=true; controls.dampingFactor=0.08;
+      controls.rotateSpeed=0.5; controls.panSpeed=0.8; controls.zoomSpeed=0.9;
+      controls.enabled=false;
+      return controls;
+    }
+    function enterFreeCam(idx){
+      const c=ensureControls();
+      if (!c){ const st=panel&&panel.querySelector('#freeState'); if(st) st.textContent='OrbitControls não carregou (offline?)'; return; }
+      selKf=idx; freeCam=true; dbgLock=true;
+      if (panel){ const lk2=panel.querySelector('#dbgLock'); if(lk2) lk2.checked=true; }
+      camera.position.copy(K[idx].p);
+      c.target.copy(K[idx].l);
+      c.enabled=true; c.update();
+      overture.style.pointerEvents='none'; hint.style.pointerEvents='none'; // não roubar o arrasto
+      markFreeUI();
+    }
+    function exitFreeCam(){
+      freeCam=false;
+      if (controls) controls.enabled=false;
+      dbgLock=false; target=cur;
+      if (panel){ const lk2=panel.querySelector('#dbgLock'); if(lk2) lk2.checked=false; }
+      markFreeUI();
+    }
+    function markFreeUI(){
+      if (!panel) return;
+      const st=panel.querySelector('#freeState'), ex=panel.querySelector('#freeExit');
+      if (freeCam){ if(st) st.textContent='editando K'+selKf+' — arraste na cena'; if(ex) ex.style.display='block'; }
+      else { if(st) st.textContent='desligada — clique ✋ num K'; if(ex) ex.style.display='none'; }
+      panel.querySelectorAll('[data-grab]').forEach(b=>{
+        b.style.outline=(freeCam && +b.dataset.grab===selKf)?'2px solid #34c759':'none';
+      });
+    }
+    function syncInputs(idx){
+      if (!panel) return;
+      panel.querySelectorAll('.v[data-k="'+idx+'"]').forEach(i=>{
+        if (i===document.activeElement) return;
+        i.value=fmt(K[idx][i.dataset.t][i.dataset.a]);
+      });
+    }
+    function updateHud(){
+      if (!dbgOn || !hud) return;
+      const p=camera.position;
+      hud.textContent =
+        'scroll pr  '+cur.toFixed(3)+'\n'+
+        'trecho     K['+dbgI+'] → K['+(dbgI+1)+']   t='+dbgT.toFixed(2)+'\n'+
+        'câmera p  '+p.x.toFixed(2)+', '+p.y.toFixed(2)+', '+p.z.toFixed(2)+'\n'+
+        'olha   l   '+lk.x.toFixed(2)+', '+lk.y.toFixed(2)+', '+lk.z.toFixed(2);
+      if (dbgScrubEl && !dbgLock) dbgScrubEl.value = cur; // scrub acompanha o scroll real
+    }
+
+    // ---------- EDITOR ao vivo dos keyframes ----------
+    // Painel na direita com um campo por número. Digitou → a câmera mexe na hora.
+    // "travar scroll" + scrub deixa você parar em qualquer ponto do trajeto sem
+    // depender da rodinha. "ir ▶" pula direto pro keyframe. No fim, "copiar código"
+    // gera o array K pronto pra colar no lugar do atual dentro de buildCameraPath().
+    const fmt = n => (Math.round(n*100)/100).toString();
+    function buildEditor(){
+      panel=document.createElement('div');
+      panel.style.cssText='position:fixed;top:12px;right:12px;z-index:80;width:266px;max-height:94vh;overflow:auto;font:11px/1.5 ui-monospace,monospace;color:#e7eaec;background:rgba(12,13,14,.93);padding:12px 12px 14px;border-radius:8px;box-shadow:0 12px 46px rgba(0,0,0,.55)';
+      const inp='width:52px;background:#1c1f21;border:1px solid #333;color:#e7eaec;border-radius:4px;padding:2px 4px;font:inherit;margin-right:3px';
+      const btn='background:#2a2d2f;border:1px solid #444;color:#e7eaec;border-radius:4px;cursor:pointer';
+      let html='<div style="letter-spacing:.12em;color:#9aa2a6;margin-bottom:8px">EDITOR DE CÂMERA · tecla D</div>';
+      html+='<label style="display:flex;gap:6px;align-items:center;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="dbgLock"> travar scroll (usar o scrub)</label>';
+      html+='<div style="margin-bottom:6px">scrub<input type="range" id="dbgScrub" min="0" max="1" step="0.001" value="0" style="width:100%"></div>';
+      html+='<div style="margin-bottom:8px">passo do ajuste <input type="number" id="dbgStep" value="0.1" step="0.01" style="'+inp+'"></div>';
+      html+='<div style="padding:7px 8px;border:1px solid #2f5c43;border-radius:5px;background:#10201a;margin-bottom:8px">';
+      html+='<div style="color:#7ee0a6;letter-spacing:.08em;margin-bottom:4px">CÂMERA LIVRE (arrastar)</div>';
+      html+='<div style="color:#8b938f;font-size:10px;margin-bottom:6px">clique <b>✋ arrastar</b> num K → na cena: <b>arrastar</b>=girar · <b>botão direito</b>=deslocar · <b>roda</b>=aproximar. O K atualiza sozinho.</div>';
+      html+='<div id="freeState" style="color:#9aa2a6">desligada — clique ✋ num K</div>';
+      html+='<button id="freeExit" style="'+btn+';width:100%;padding:5px;margin-top:6px;display:none">sair da câmera livre</button>';
+      html+='</div>';
+      html+='<div style="border-top:1px solid #2a2d2f;margin-bottom:8px"></div>';
+      K.forEach((k,idx)=>{
+        html+='<div style="margin-bottom:9px">';
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px"><b style="color:#ff6b60">K'+idx+'</b><span style="display:flex;gap:4px"><button data-grab="'+idx+'" style="'+btn+';padding:1px 7px">✋ arrastar</button><button data-go="'+idx+'" style="'+btn+';padding:1px 8px">ir ▶</button></span></div>';
+        [['p','#ff6b60'],['l','#4cd964']].forEach(pair=>{
+          const t=pair[0];
+          html+='<div style="margin-bottom:2px"><span style="color:'+pair[1]+'">'+t+'</span> ';
+          ['x','y','z'].forEach(a=>{
+            html+='<input class="v" data-k="'+idx+'" data-t="'+t+'" data-a="'+a+'" type="number" step="0.1" value="'+fmt(k[t][a])+'" style="'+inp+'">';
+          });
+          html+='</div>';
+        });
+        html+='</div>';
+      });
+      html+='<div style="border-top:1px solid #2a2d2f;margin:8px 0"></div>';
+      html+='<button id="dbgCopy" style="'+btn+';width:100%;padding:6px;margin-bottom:6px">copiar código dos keyframes</button>';
+      html+='<textarea id="dbgOut" readonly style="width:100%;height:92px;background:#0d0f10;border:1px solid #333;color:#8fddb0;border-radius:5px;padding:6px;font:10px/1.4 ui-monospace,monospace;resize:vertical"></textarea>';
+      panel.innerHTML=html;
+      document.body.appendChild(panel);
+
+      dbgScrubEl = panel.querySelector('#dbgScrub');
+      const lockEl = panel.querySelector('#dbgLock');
+      lockEl.addEventListener('change', ()=>{ dbgLock=lockEl.checked; });
+      dbgScrubEl.addEventListener('input', ()=>{ const v=parseFloat(dbgScrubEl.value); target=v; cur=v; });
+      panel.querySelector('#dbgStep').addEventListener('input', e=>{
+        const s=parseFloat(e.target.value)||0.1;
+        panel.querySelectorAll('.v').forEach(i=>i.step=s);
+      });
+      panel.querySelectorAll('.v').forEach(i=>{
+        i.addEventListener('input', ()=>{
+          const val=parseFloat(i.value);
+          if (!isNaN(val)){ K[+i.dataset.k][i.dataset.t][i.dataset.a]=val; buildDebugPath(); }
+        });
+      });
+      panel.querySelectorAll('[data-go]').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          if (freeCam) exitFreeCam();
+          const v=seg[+b.dataset.go];
+          dbgLock=true; lockEl.checked=true;
+          target=v; cur=v; dbgScrubEl.value=v;
+        });
+      });
+      panel.querySelectorAll('[data-grab]').forEach(b=>{
+        b.addEventListener('click', ()=> enterFreeCam(+b.dataset.grab));
+      });
+      panel.querySelector('#freeExit').addEventListener('click', ()=> exitFreeCam());
+      panel.querySelector('#dbgCopy').addEventListener('click', ()=>{
+        const code='K = [\n'+K.map(k=>
+          '  { p:new THREE.Vector3('+fmt(k.p.x)+', '+fmt(k.p.y)+', '+fmt(k.p.z)+'), '+
+          'l:new THREE.Vector3('+fmt(k.l.x)+', '+fmt(k.l.y)+', '+fmt(k.l.z)+') },'
+        ).join('\n')+'\n];';
+        const out=panel.querySelector('#dbgOut');
+        out.value=code; out.select();
+        if (navigator.clipboard) navigator.clipboard.writeText(code).catch(()=>{});
+      });
+    }
+
+    addEventListener('keydown', e=>{
+      if (e.key!=='d' && e.key!=='D') return;
+      if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return; // não alterna enquanto digita
+      if (!K.length) return; // ainda carregando o modelo
+      dbgOn=!dbgOn;
+      if (!dbgGroup) buildDebugPath();
+      dbgGroup.visible=dbgOn;
+      if (!panel) buildEditor();
+      panel.style.display = dbgOn ? 'block' : 'none';
+      if (!dbgOn) exitFreeCam();
+      if (!hud){
+        hud=document.createElement('div');
+        hud.style.cssText='position:fixed;left:12px;bottom:12px;z-index:80;font:11px/1.6 ui-monospace,monospace;color:#0f0;background:rgba(0,0,0,.72);padding:9px 11px;border-radius:6px;white-space:pre;pointer-events:none';
+        document.body.appendChild(hud);
+      }
+      hud.style.display = dbgOn ? 'block' : 'none';
+    });
+
+    // ---------- overlays / scroll ----------
+    const cardsEl=document.getElementById('cards');
+    const overture=document.getElementById('overture');
+    const hint=document.getElementById('hint');
+    const headerEl=document.querySelector('header');
+    const navEl=headerEl.querySelector('.nav');
+    const nameEl=headerEl.querySelector('.name');
+    const cards=[...document.querySelectorAll('.card')];
+    let target=0,cur=0;
+    function readScroll(){
+      if (dbgLock) return; // scroll travado: quem manda é o scrub do editor
+      const r=cardsEl.getBoundingClientRect();
+      const total=cardsEl.offsetHeight-innerHeight;
+      const u=THREE.MathUtils.clamp(-r.top/total,0,1);
+      target=warpScroll(u);   // aplica a "segurada" em cada parada
+    }
+    addEventListener('scroll',readScroll,{passive:true}); readScroll();
+
+    // ---------- line-animation do logo: desenha em loop (vai-e-volta) até o 1º scroll; aí apaga e não volta ----------
+    (function(){
+      const wrap=document.querySelector('#overture .line-animation');
+      const path=wrap && wrap.querySelector('path');
+      if(!path) return;
+      const len=path.getTotalLength();
+      path.style.setProperty('--len', len);
+      if(reduce){ path.style.strokeDashoffset='0'; return; } // sem movimento: mostra já desenhado
+      wrap.classList.add('drawing');                          // inicia o loop desenha/apaga
+      let erased=false;
+      function erase(){
+        if(erased) return; erased=true;
+        const cs=getComputedStyle(path);
+        path.style.animation='none';
+        path.style.strokeDashoffset=cs.strokeDashoffset;      // congela o traço onde está (sem recuar = sem dividir)
+        path.style.opacity=cs.opacity;
+        void path.getBBox();                                  // reflow p/ a transição partir do estado atual
+        path.style.transition='opacity .6s ease';
+        path.style.opacity='0';                               // some por opacidade e não volta
+      }
+      ['wheel','touchmove','scroll'].forEach(ev=>addEventListener(ev, erase, {passive:true, once:true}));
+    })();
+
+    function overlays(p){
+      const o=THREE.MathUtils.clamp(1-p/0.09,0,1);
+      overture.style.opacity=o; overture.style.transform=`translateY(${(1-o)*-26}px)`;
+      hint.style.opacity=o*0.7;
+      // header do topo só aparece DEPOIS que o <h1> do overture some (o=0, ou seja p>=0.09)
+      const headOp=THREE.MathUtils.clamp((p-0.09)/0.04,0,1);
+      headerEl.style.opacity=headOp;
+      const headPE=headOp>0.4?'auto':'none'; // header (menu + logo) só clicável quando visível
+      if(navEl) navEl.style.pointerEvents=headPE;
+      if(nameEl) nameEl.style.pointerEvents=headPE;
+      cards.forEach(c=>{
+        const a=+c.dataset.a,bb=+c.dataset.b,mid=(a+bb)/2,half=(bb-a)/2;
+        const op=THREE.MathUtils.clamp(1-Math.abs(p-mid)/half,0,1);
+        const isCenter=c.classList.contains('center');
+        c.style.opacity=smooth(op);
+        const ty=(1-op)*26;
+        c.style.transform=isCenter ? `translateX(-50%) translateY(${ty}px)` : `translateY(${ty}px)`;
+      });
+      // a casa nasce junto com a saída do logo: entra de 0→1 no mesmo trecho (p:0→0.09),
+      // e só volta a sumir no finzinho do scroll (fade de saída original preservado)
+      const houseIn  = THREE.MathUtils.clamp(p/0.09, 0, 1);          // 0 no topo → 1 ao entrar
+      const houseOut = THREE.MathUtils.clamp((p-0.985)/0.015, 0, 1); // fade no fim
+      mount.style.opacity = houseIn * (1 - houseOut);
+    }
+
+    // cursor-guia de scroll que segue o mouse (com leve inércia)
+    const scur=document.getElementById('scur');
+    let sx=0, sy=0, tx=0, ty=0, scurSeen=false;
+    addEventListener('mousemove', e=>{
+      tx=e.clientX; ty=e.clientY;
+      if (!scurSeen){ sx=tx; sy=ty; } // aparece já no cursor, sem voar do canto
+      scurSeen=true;
+    });
+    document.addEventListener('mouseleave', ()=>{ scurSeen=false; });
+
+    // ============ HOTSPOTS: bolinhas ancoradas no 3D + caixa + popup + editor (tecla H) ============
+    // Cada hotspot tem um ponto 3D (pos), pertence a uma parada (stop = índice em seg[]),
+    // e um título/texto/4 imagens. A bolinha é um DIV projetado da posição 3D pra tela a cada frame;
+    // aparece quando a câmera está PARADA naquela parada. Cole aqui o SEED_HOTS do editor.
+    const SEED_HOTS = [
+      { stop:1, pos:[3.84,1.86,-3.09], title:"Cozinha", text:"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur molestie, nisl sit amet iaculis viverra, lectus justo viverra nulla, sed blandit risus est a velit. Sed porttitor dignissim rhoncus. Phasellus volutpat ut nunc sed pulvinar. Maecenas egestas dapibus lorem. Cras posuere accumsan molestie. Phasellus lacinia ante quam, at hendrerit erat cursus vel. Nullam metus purus, pulvinar vel mattis vel, molestie ut purus. Donec egestas, sapien ut tempus posuere, leo nisl congue metus, eget interdum nisl magna ut lectus. Integer id diam quis neque sollicitudin dignissim. Aenean in feugiat dolor. Nulla ac feugiat ligula.", images:["public/fotos/cozinha-01.jpg","public/fotos/cozinha-02.jpg","public/fotos/cozinha-03.jpg","public/fotos/cozinha-04.jpg","public/fotos/cozinha-05.jpg"] },
+      { stop:2, pos:[0.09,1.60,-3.98], title:"Área de leitura", text:"Descrição…Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur molestie, nisl sit amet iaculis viverra, lectus justo viverra nulla, sed blandit risus est a velit. Sed porttitor dignissim rhoncus. Phasellus volutpat ut nunc sed pulvinar. Maecenas egestas dapibus lorem. Cras posuere accumsan molestie. Phasellus lacinia ante quam, at hendrerit erat cursus vel. Nullam metus purus, pulvinar vel mattis vel, molestie ut purus. Donec egestas, sapien ut tempus posuere, leo nisl congue metus, eget interdum nisl magna ut lectus. Integer id diam quis neque sollicitudin dignissim. Aenean in feugiat dolor. Nulla ac feugiat ligula.", images:["public/fotos/leitura-01.jpg","public/fotos/leitura-02.jpg","public/fotos/leitura-03.jpg"] },
+      { stop:3, pos:[3.57,1.62,-6.99], title:"Varanda ", text:"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur molestie, nisl sit amet iaculis viverra, lectus justo viverra nulla, sed blandit risus est a velit. Sed porttitor dignissim rhoncus. Phasellus volutpat ut nunc sed pulvinar. Maecenas egestas dapibus lorem. Cras posuere accumsan molestie. Phasellus lacinia ante quam, at hendrerit erat cursus vel. Nullam metus purus, pulvinar vel mattis vel, molestie ut purus. Donec egestas, sapien ut tempus posuere, leo nisl congue metus, eget interdum nisl magna ut lectus. Integer id diam quis neque sollicitudin dignissim. Aenean in feugiat dolor. Nulla ac feugiat ligula.", images:["public/fotos/varanda-01.jpg"] },
+      { stop:3, pos:[4.18,1.04,-5.79], title:"Sala", text:"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur molestie, nisl sit amet iaculis viverra, lectus justo viverra nulla, sed blandit risus est a velit. Sed porttitor dignissim rhoncus. Phasellus volutpat ut nunc sed pulvinar. Maecenas egestas dapibus lorem. Cras posuere accumsan molestie. Phasellus lacinia ante quam, at hendrerit erat cursus vel. Nullam metus purus, pulvinar vel mattis vel, molestie ut purus. Donec egestas, sapien ut tempus posuere, leo nisl congue metus, eget interdum nisl magna ut lectus. Integer id diam quis neque sollicitudin dignissim. Aenean in feugiat dolor. Nulla ac feugiat ligula.", images:["public/fotos/sala-01.jpg","public/fotos/sala-02.jpg","public/fotos/sala-03.jpg"] },
+      { stop:4, pos:[4.19,4.75,-3.47], title:"Suíte", text:"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur molestie, nisl sit amet iaculis viverra, lectus justo viverra nulla, sed blandit risus est a velit. Sed porttitor dignissim rhoncus. Phasellus volutpat ut nunc sed pulvinar. Maecenas egestas dapibus lorem. Cras posuere accumsan molestie. Phasellus lacinia ante quam, at hendrerit erat cursus vel. Nullam metus purus, pulvinar vel mattis vel, molestie ut purus. Donec egestas, sapien ut tempus posuere, leo nisl congue metus, eget interdum nisl magna ut lectus. Integer id diam quis neque sollicitudin dignissim. Aenean in feugiat dolor. Nulla ac feugiat ligula.", images:["public/fotos/suite-01.jpg","public/fotos/suite-02.jpg","public/fotos/suite-03.jpg","public/fotos/suite-04.jpg"] },
+      { stop:6, pos:[0.09,4.06,-4.87], title:"Escadas", text:"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur molestie, nisl sit amet iaculis viverra, lectus justo viverra nulla, sed blandit risus est a velit. Sed porttitor dignissim rhoncus. Phasellus volutpat ut nunc sed pulvinar. Maecenas egestas dapibus lorem. Cras posuere accumsan molestie. Phasellus lacinia ante quam, at hendrerit erat cursus vel. Nullam metus purus, pulvinar vel mattis vel, molestie ut purus. Donec egestas, sapien ut tempus posuere, leo nisl congue metus, eget interdum nisl magna ut lectus. Integer id diam quis neque sollicitudin dignissim. Aenean in feugiat dolor. Nulla ac feugiat ligula.", images:["public/fotos/escada-01.jpg"] },
+    ];
+    let HOTS = SEED_HOTS.map(h=>({ stop:h.stop, pos:new THREE.Vector3(h.pos[0],h.pos[1],h.pos[2]), title:h.title, text:h.text, images:(h.images||['','','','']), _el:null }));
+    let hoverHot=-1, popupOpen=false, hotEditOn=false, activeBox=-1, stopVis=0, hotedit=null;
+    let hotspotsEl, hotbox, boxTitle, boxText, boxGrid, hotpop, popupImg, hotList, hotOut;
+    const _v=new THREE.Vector3(), ray=new THREE.Raycaster();
+    const mk=(t,id)=>{ const e=document.createElement(t); if(id) e.id=id; return e; };
+
+    function ensureDots(){
+      hotspotsEl.innerHTML='';
+      HOTS.forEach((ho,i)=>{
+        const d=mk('div'); d.className='hot-dot';
+        d.addEventListener('mouseenter',()=>{ hoverHot=i; });   // cursor vira câmera SÓ no hover (ponto 1)
+        d.addEventListener('mouseleave',()=>{ if(hoverHot===i) hoverHot=-1; });
+        d.addEventListener('click',e=>{ e.stopPropagation(); if(hotEditOn) return; openBox(i); });
+        hotspotsEl.appendChild(d); ho._el=d;
+      });
+    }
+    function updateHotspots(){
+      if(!hotspotsEl) return;
+      let ns=0,best=1e9;
+      for(let k=0;k<seg.length;k++){ const d=Math.abs(cur-seg[k]); if(d<best){best=d;ns=k;} }
+      stopVis=THREE.MathUtils.clamp(1-best/0.06,0,1);   // 1 = parado bem na parada; some ao sair
+      const w=innerWidth,h=innerHeight;
+      for(let i=0;i<HOTS.length;i++){
+        const ho=HOTS[i], dot=ho._el; if(!dot) continue;
+        _v.copy(ho.pos).project(camera);                // 3D -> NDC
+        const x=(_v.x*0.5+0.5)*w, y=(-_v.y*0.5+0.5)*h;  // NDC -> px
+        const on=_v.z<1 && x>-30 && x<w+30 && y>-30 && y<h+30;
+        let vis;
+        if(hotEditOn){ vis = on ? 1 : 0; dot.title='#'+i+' · parada '+ho.stop; } // no editor: mostra TODAS que estão na tela
+        else { const showStop=(ho.stop===ns)?stopVis:0; vis=(!popupOpen && on && showStop>0.05)?showStop:0; }
+        if(vis>0.05){ dot.style.left=x+'px'; dot.style.top=y+'px'; dot.style.opacity=vis; dot.style.pointerEvents='auto'; }
+        else { dot.style.opacity=0; dot.style.pointerEvents='none'; if(hoverHot===i) hoverHot=-1; }
+      }
+      if(!hotEditOn && activeBox>=0){ const ho=HOTS[activeBox]; if(!ho || ho.stop!==ns || stopVis<0.15) closeBox(); }
+    }
+    function updateScur(){
+      if(!scur) return;
+      const kf=reduce?1:0.18;
+      sx+=(tx-sx)*kf; sy+=(ty-sy)*kf;
+      scur.style.transform='translate3d('+sx+'px,'+sy+'px,0)';
+      scur.classList.remove('mode-scroll','mode-cam','mode-x');
+      if(hotEditOn){ scur.style.opacity=0; document.body.style.cursor='crosshair'; return; } // modo colocar pin
+      let mode='', op=0;
+      if(popupOpen){ mode='x'; op=1; }                                   // popup aberto -> X
+      else if(dbgOn || freeCam){ op=0; }                                 // editor de câmera: cursor normal
+      else if(hoverHot>=0){ mode='cam'; op=1; }                          // hover na bolinha -> câmera
+      else if(scurSeen && cur<0.09){ mode='scroll'; op=THREE.MathUtils.clamp(1-cur/0.09,0,1); } // intro
+      if(mode) scur.classList.add('mode-'+mode);
+      scur.style.opacity=op;
+      document.body.style.cursor = op>0.05 ? 'none' : '';
+    }
+    function openBox(i){
+      const ho=HOTS[i]; if(!ho) return; activeBox=i;
+      boxTitle.textContent=ho.title||''; boxText.textContent=ho.text||'';
+      boxGrid.innerHTML='';
+      const imgs=(ho.images||[]).filter(Boolean);            // só as fotos que existem nesse pin
+      boxGrid.dataset.n=imgs.length;                          // controla as colunas (1 foto = coluna única)
+      imgs.forEach((src,j)=>{
+        const cell=mk('div'); cell.className='hb-cell';
+        const im=mk('img'); im.src=src; cell.appendChild(im);
+        const n=mk('span'); n.className='hb-n'; n.textContent=String(j+1).padStart(2,'0'); cell.appendChild(n);
+        cell.addEventListener('click',e=>{ e.stopPropagation(); openPopup(src); });
+        boxGrid.appendChild(cell);
+      });
+      hotbox.classList.add('on');
+    }
+    function closeBox(){ activeBox=-1; if(hotbox) hotbox.classList.remove('on'); }
+    function openPopup(src){
+      popupImg.innerHTML=''; if(src){ const img=mk('img'); img.src=src; popupImg.appendChild(img); }
+      hotpop.classList.add('on'); popupOpen=true;
+      document.documentElement.style.overflow='hidden'; document.body.style.overflow='hidden'; // trava scroll
+    }
+    function closePopup(){
+      if(!popupOpen) return;
+      hotpop.classList.remove('on'); popupOpen=false;
+      document.documentElement.style.overflow=''; document.body.style.overflow=''; // libera navegação
+    }
+    function buildHotEditor(){
+      hotedit=mk('div','hotedit');
+      hotedit.innerHTML='<div style="letter-spacing:.1em;color:#9aa2a6;margin-bottom:8px">HOTSPOTS · tecla H</div>'
+        +'<div style="color:#8b938f;font-size:10px;margin-bottom:8px">clique na cena pra soltar uma bolinha na parada mais próxima da câmera atual. Edite título/texto e “copiar config”.</div>'
+        +'<div class="he-list"></div>'
+        +'<button class="he-btn" id="heCopy" style="width:100%;padding:6px;margin:8px 0 6px">copiar config</button>'
+        +'<textarea class="he-in" id="heOut" rows="6" readonly style="font-size:10px"></textarea>';
+      document.body.appendChild(hotedit);
+      hotList=hotedit.querySelector('.he-list'); hotOut=hotedit.querySelector('#heOut');
+      hotedit.querySelector('#heCopy').addEventListener('click',copyHotCfg);
+    }
+    function buildHotList(){
+      if(!hotList) return; hotList.innerHTML='';
+      HOTS.forEach((ho,i)=>{
+        const it=mk('div'); it.className='he-item';
+        it.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px"><b style="color:#7ee0a6">#'+i+' · parada '+ho.stop+'</b><span><button class="he-btn" data-go="'+ho.stop+'">ir</button> <button class="he-btn" data-del="'+i+'">del</button></span></div>';
+        const t=mk('input'); t.className='he-in'; t.value=ho.title; t.placeholder='título';
+        t.addEventListener('input',()=>{ ho.title=t.value; });
+        const x=mk('textarea'); x.className='he-in'; x.value=ho.text; x.rows=2; x.placeholder='texto';
+        x.addEventListener('input',()=>{ ho.text=x.value; });
+        it.appendChild(t); it.appendChild(x); hotList.appendChild(it);
+      });
+      hotList.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{ HOTS.splice(+b.dataset.del,1); ensureDots(); buildHotList(); }));
+      hotList.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{ const v=seg[+b.dataset.go]; window.scrollTo(0, v*(cardsEl.offsetHeight-innerHeight)); }));
+    }
+    function copyHotCfg(){
+      const code='const SEED_HOTS = [\n'+HOTS.map(h=>'  { stop:'+h.stop+', pos:['+h.pos.x.toFixed(2)+','+h.pos.y.toFixed(2)+','+h.pos.z.toFixed(2)+'], title:'+JSON.stringify(h.title)+', text:'+JSON.stringify(h.text)+', images:'+JSON.stringify(h.images||["","","",""])+' },').join('\n')+'\n];';
+      if(hotOut){ hotOut.value=code; hotOut.select(); }
+      if(navigator.clipboard) navigator.clipboard.writeText(code).catch(()=>{});
+    }
+
+    // monta o DOM + eventos
+    hotspotsEl=mk('div','hotspots'); document.body.appendChild(hotspotsEl);
+    hotbox=mk('div','hotbox');
+    hotbox.innerHTML='<div class="hb-close"></div><div class="hb-body"><div class="hb-main"><div class="hb-eyebrow">ver imagens</div><h4></h4><div class="hb-text"></div></div><div class="hb-grid"></div></div>';
+    document.body.appendChild(hotbox);
+    boxTitle=hotbox.querySelector('h4'); boxText=hotbox.querySelector('.hb-text'); boxGrid=hotbox.querySelector('.hb-grid');
+    hotbox.querySelector('.hb-close').addEventListener('click',e=>{ e.stopPropagation(); closeBox(); });
+    hotpop=mk('div','hotpop'); hotpop.innerHTML='<div class="hp-veil"></div><div class="hp-img"></div>';
+    document.body.appendChild(hotpop); popupImg=hotpop.querySelector('.hp-img');
+    hotpop.addEventListener('click',()=>closePopup());   // clicar em qualquer lugar do popup fecha
+    ensureDots();
+
+    // ---- menu do topo: Sobre (modal) · Projetos/Contato (scroll até a seção) ----
+    // scroll animado com duração própria (o 'smooth' nativo ia rápido demais pro fim)
+    let scrollAnim=null;
+    const easeInOut=x=> x<0.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; // easeInOutCubic
+    function scrollToFrac(f){                             // f: 0..1 na régua de scroll dos cards
+      const total=cardsEl.offsetHeight-innerHeight;
+      const startY=window.scrollY||window.pageYOffset||0;
+      const endY=THREE.MathUtils.clamp(f,0,1)*total;
+      const dist=endY-startY;
+      if(scrollAnim){ cancelAnimationFrame(scrollAnim); scrollAnim=null; }
+      if(reduce || Math.abs(dist)<2){ window.scrollTo(0,endY); return; }
+      const dur=THREE.MathUtils.clamp(Math.abs(dist)*2.7, 4200, 9600); // 3x mais lento (teto 9,6s)
+      const t0=performance.now();
+      (function step(now){ const t=Math.min(1,(now-t0)/dur); window.scrollTo(0, startY + dist*easeInOut(t)); if(t<1) scrollAnim=requestAnimationFrame(step); else scrollAnim=null; })(t0);
+    }
+    // se o usuário mexer no scroll no meio do caminho, cancela (deixa ele no controle)
+    ['wheel','touchstart','keydown'].forEach(ev=>addEventListener(ev,()=>{ if(scrollAnim){ cancelAnimationFrame(scrollAnim); scrollAnim=null; } },{passive:true}));
+    if(nameEl) nameEl.addEventListener('click',()=>scrollToFrac(0)); // logo -> começo do scroll
+    document.querySelectorAll('header .nav a[data-scroll]').forEach(a=>{
+      a.addEventListener('click',e=>{ e.preventDefault(); scrollToFrac(parseFloat(a.dataset.scroll)); });
+    });
+    const aboutModal=document.getElementById('aboutmodal');
+    function openAbout(){ aboutModal.classList.add('on'); aboutModal.setAttribute('aria-hidden','false');
+      document.documentElement.style.overflow='hidden'; document.body.style.overflow='hidden'; }
+    function closeAbout(){ aboutModal.classList.remove('on'); aboutModal.setAttribute('aria-hidden','true');
+      document.documentElement.style.overflow=''; document.body.style.overflow=''; }
+    document.getElementById('navSobre').addEventListener('click',e=>{ e.preventDefault(); openAbout(); });
+    aboutModal.querySelector('.am-veil').addEventListener('click',closeAbout);
+    aboutModal.querySelector('.am-close').addEventListener('click',closeAbout);
+    aboutModal.querySelector('.am-panel').addEventListener('click',e=>e.stopPropagation()); // clique no card não fecha
+    addEventListener('keydown',e=>{ if(e.key==='Escape' && aboutModal.classList.contains('on')) closeAbout(); });
+
+    window.addEventListener('click', e=>{
+      const t=e.target;
+      const inUI = (t && t.closest && t.closest('#hotedit, #hotbox, #hotpop, .hot-dot')) || (panel && panel.contains(t));
+      if(hotEditOn){                                      // editor: clicar na cena solta uma bolinha
+        if(inUI) return;                                  // clicou num painel/bolinha: ignora
+        const r=renderer.domElement.getBoundingClientRect();
+        ray.setFromCamera({ x:((e.clientX-r.left)/r.width)*2-1, y:-((e.clientY-r.top)/r.height)*2+1 }, camera);
+        let point=null;
+        if(modelRoot){ const hits=ray.intersectObject(modelRoot,true); if(hits.length) point=hits[0].point.clone(); }
+        if(!point) point=ray.ray.at(2.5, new THREE.Vector3()); // fallback: 2,5m à frente da câmera
+        let ns=0,best=1e9; for(let k=0;k<seg.length;k++){ const d=Math.abs(cur-seg[k]); if(d<best){best=d;ns=k;} }
+        HOTS.push({ stop:ns, pos:point, title:'Ponto '+(HOTS.length+1), text:'Descrição…', images:['','','',''], _el:null });
+        ensureDots(); buildHotList(); needsRender=true;
+        return;
+      }
+      if(activeBox>=0 && !inUI) closeBox();                // fora do editor: clique no vazio fecha a caixa
+    }, true);
+    addEventListener('keydown', e=>{
+      if(e.key!=='h' && e.key!=='H') return;
+      if(e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+      hotEditOn=!hotEditOn;
+      if(!hotedit) buildHotEditor();
+      hotedit.style.display=hotEditOn?'block':'none';
+      if(hotEditOn) buildHotList();
+    });
+    // ============ /HOTSPOTS ============
+
+    let lastRendered=-999, needsRender=true;
+    function tick(){
+      requestAnimationFrame(tick);
+      let doRender=false;
+      if (freeCam && controls && controls.enabled){
+        controls.update();
+        K[selKf].p.copy(camera.position);
+        K[selKf].l.copy(controls.target);
+        lk.copy(controls.target);
+        updateKfMarker(selKf); syncInputs(selKf);
+        doRender=true; // modo livre: renderiza sempre (arrasto + damping)
+      } else {
+        cur+=(target-cur)*(reduce?1:0.075);
+        camAt(cur);
+        if (Math.abs(cur-lastRendered) > 1e-4) doRender=true; // só redesenha a casa quando a câmera mexe
+      }
+      overlays(cur);
+      if (freeCam) mount.style.opacity=1; // não deixar o fade de fim de scroll sumir com a cena
+      updateHotspots();  // projeta as bolinhas 3D -> tela e controla visibilidade por parada
+      updateScur();      // cursor: scroll (intro) / câmera (hover na bolinha) / X (popup aberto)
+      updateHud();
+      if (doRender || needsRender){ renderer.render(scene,camera); lastRendered=cur; needsRender=false; }
+    }
+
+    function onViewportChange(){
+      applyCameraFraming();  // recalcula fov/aspect (e o retrato) ao girar ou redimensionar
+      renderer.setSize(innerWidth,innerHeight); readScroll(); needsRender=true;
+    }
+    addEventListener('resize', onViewportChange);
+    addEventListener('orientationchange', onViewportChange);
+  })();
+  </script>
+</body>
+</html>
