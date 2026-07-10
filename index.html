@@ -740,7 +740,7 @@
                   m.envMapIntensity = Math.min(m.envMapIntensity ?? 1, 0.45);
                   // anisotropia: mata o "tremido" das texturas em ângulo durante o scroll
                   ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap'].forEach(k=>{
-                    if(m[k] && m[k].isTexture){ m[k].anisotropy = maxAniso; m[k].needsUpdate = true; }
+                    if(m[k] && m[k].isTexture){ m[k].anisotropy = maxAniso; m[k].minFilter = THREE.LinearMipmapLinearFilter; m[k].generateMipmaps = true; m[k].needsUpdate = true; }
                   });
                 } })
               }
@@ -1486,7 +1486,7 @@
       const fin=gal && gal.querySelector('.fin');
       const track=document.getElementById('galTrack');
       if(!gal || !fin || !track) return;
-      let maxX=0, HOLD=0, playing=false;
+      let maxX=0, HOLD=0, PANLEN=0, playing=false;
       // larguras naturais: recalcula o layout quando cada imagem carrega (a largura depende do aspect real)
       track.querySelectorAll('img').forEach(img=>{ if(!img.complete) img.addEventListener('load', layout, {once:true}); });
       function onScroll(){
@@ -1498,13 +1498,14 @@
         if(scrolled >= 0 && !playing){ playing=true; fin.classList.add('play'); }  // dispara o intro em TEMPO (1s + 0,3s + 0,3s)
         fin.style.pointerEvents = playing ? 'auto' : 'none';
         const panScrolled = Math.max(0, scrolled - HOLD);                  // pan horizontal só depois do respiro do intro
-        const p = maxX>0 ? Math.min(1, panScrolled/maxX) : 0;
+        const p = PANLEN>0 ? Math.min(1, panScrolled/PANLEN) : 0;
         track.style.transform='translate3d('+(-p*maxX).toFixed(1)+'px,0,0)';
       }
       function layout(){
-        HOLD = innerHeight*0.4;                                            // respiro de scroll pro intro tocar antes do pan
+        HOLD = innerHeight*0.12;                                           // respiro curto antes do pan
         maxX = Math.max(0, track.scrollWidth - innerWidth);
-        gal.style.height = (innerHeight + HOLD + maxX) + 'px';
+        PANLEN = maxX*0.55;                                                // pan mais rápido: menos scroll pra passar as fotos
+        gal.style.height = (innerHeight + HOLD + PANLEN) + 'px';
         onScroll();
       }
       addEventListener('resize', layout);
