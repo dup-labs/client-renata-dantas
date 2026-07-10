@@ -544,9 +544,10 @@
     const DEBUG_LOAD = /[?&](debug|diag)/.test(location.search);
     if (!DEBUG_LOAD){ const lh=document.getElementById('livehash'); if(lh) lh.style.display='none'; }
 
-    // logarithmicDepthBuffer OFF de propósito: ele ANULA o polygonOffset (escreve o depth no shader),
-    // o que impedia o fix de z-fighting dos blocos coplanares. Range 0.1–40 tem precisão de sobra sem ele.
-    const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+    // logarithmicDepthBuffer ON: é NECESSÁRIO (sem ele o z-fighting explode na casa inteira).
+    // Efeito colateral: anula o polygonOffset — por isso os 2 blocos coplanares se resolvem por
+    // NUDGE de posição (empurrão físico), não por offset de profundidade.
+    const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance', logarithmicDepthBuffer:true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(innerWidth, innerHeight);
     renderer.outputEncoding = THREE.sRGBEncoding;
