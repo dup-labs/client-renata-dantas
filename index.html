@@ -679,6 +679,10 @@
     // versão do modelo: ?min carrega a comprimida (webp 512 + draco, ~14,6MB) pra testar
     // lado a lado com a atual (~30MB) antes de virar padrão. Sem ?min = versão atual.
     const GLB = /[?&]min/.test(location.search) ? 'apto-117.min.glb' : 'apto-117.opt.glb';
+
+    // z-fighting: blocos que piscam (encostados/coplanares). nome do node -> polygonOffset.
+    // negativo puxa pra frente (vence por cima); positivo empurra pra trás. Achados via tecla M.
+    const ZFIX = { '3DGEOM-2852': -1, '3DGEOM-1200': 1 };
     fetch(GLB)
       .then(res => {
         if (!res.ok) throw new Error('HTTP ' + res.status + ' ao buscar ' + GLB + ' — confira se o arquivo está na mesma pasta e se está servindo via http(s), não file://.');
@@ -729,6 +733,13 @@
                 const mats = Array.isArray(o.material) ? o.material : [o.material];
                 // mats.forEach(m=>{ if(m) m.envMapIntensity = 0.6; });
                 mats.forEach(m=>{ if(m) m.envMapIntensity = Math.min(m.envMapIntensity ?? 1, 0.45); })
+              }
+              // z-fighting: clona o material do bloco e aplica polygonOffset só nele
+              // (não afeta outros meshes que compartilham o mesmo material)
+              if (o.material && ZFIX[o.name] !== undefined){
+                const d = ZFIX[o.name];
+                const off = m => { const c=m.clone(); c.polygonOffset=true; c.polygonOffsetFactor=d; c.polygonOffsetUnits=d; return c; };
+                o.material = Array.isArray(o.material) ? o.material.map(off) : off(o.material);
               }
             }
           });
@@ -1394,10 +1405,11 @@
         rc.setFromCamera({x:((e.clientX-r.left)/r.width)*2-1, y:-((e.clientY-r.top)/r.height)*2+1}, camera);
         const hs=rc.intersectObject(modelRoot,true); return hs.length?hs[0]:null;
       }
-      function draw(m){
+      function draw(m,i,n){
         const p=m.position;
+        const cyc=(n>1)?(' <span style="color:#8b938f">('+(i+1)+'/'+n+' · reclique cicla)</span>'):'';
         panel.innerHTML='<div style="color:#7ea8ff;letter-spacing:.08em;margin-bottom:6px">INSPETOR · tecla M</div>'
-          +'<div><b>'+mid(m)+'</b></div><div style="color:#9aa2a6">material: '+matName(m)+'</div>'
+          +'<div><b>'+mid(m)+'</b>'+cyc+'</div><div style="color:#9aa2a6">material: '+matName(m)+'</div>'
           +'<div id="ip" style="color:#8fddb0;margin-top:4px">pos '+p.x.toFixed(3)+', '+p.y.toFixed(3)+', '+p.z.toFixed(3)+'</div>'
           +'<div style="color:#8b938f;font-size:10px;margin-top:6px">arraste pra mover · tecla R = voltar</div>'
           +'<button id="ic" style="margin-top:8px;width:100%;padding:5px;background:#2a2d2f;border:1px solid #444;color:#e7eaec;border-radius:4px;cursor:pointer">copiar info</button>';
@@ -1411,11 +1423,23 @@
           if(!on){ unhi(); lbl.style.display='none'; panel.style.display='none'; sel=null; }
         } else if(on && sel && (e.key==='r'||e.key==='R') && home.has(sel)){ sel.position.copy(home.get(sel)); needsRender=true; ip(sel); }
       });
-      canvas.addEventListener('mousedown', e=>{
+      function hitsAt(e){
+        if(!modelRoot) return [];
+        const r=canvas.getBoundingClientRect();
+        rc.setFromCamera({x:((e.clientX-r.left)/r.width)*2-1, y:-((e.clientY-r.top)/r.height)*2+1}, camera);
+        return rc.intersectObject(modelRoot,true);
+      }
+      let lastX=-9, lastY=-9, cyc=0;
+      // mousedown na WINDOW (não no canvas) pra não ser bloqueado por overlays; reclicar perto cicla
+      addEventListener('mousedown', e=>{
         if(!on) return;
-        const h=pickAt(e); if(!h) return;
-        sel=h.object; if(!home.has(sel)) home.set(sel, sel.position.clone());
-        draw(sel);
+        if(panel && panel.contains(e.target)) return;   // clique dentro do painel (ex: copiar) -> ignora
+        const hs=hitsAt(e); if(!hs.length) return;
+        if(Math.abs(e.clientX-lastX)<7 && Math.abs(e.clientY-lastY)<7) cyc++; else cyc=0; // reclique -> próximo sobreposto
+        lastX=e.clientX; lastY=e.clientY;
+        const i=cyc%hs.length; sel=hs[i].object;
+        if(!home.has(sel)) home.set(sel, sel.position.clone());
+        draw(sel, i, hs.length);
         camera.getWorldDirection(camDir); plane.setFromNormalAndCoplanarPoint(camDir, sel.position);
         const r=canvas.getBoundingClientRect();
         rc.setFromCamera({x:((e.clientX-r.left)/r.width)*2-1, y:-((e.clientY-r.top)/r.height)*2+1}, camera);
