@@ -229,7 +229,7 @@
   .card.contato .say{ font-family:var(--serif); font-style:italic; font-size:17px; color:#3a382f; margin-bottom:20px; }
 
   footer{
-    z-index:20; color:var(--ink);
+    z-index:20; color:var(--ink); background:#fff;
     padding:clamp(16px,3vw,30px) clamp(20px,5vw,54px);
     display:flex; justify-content:space-between; flex-wrap:wrap; gap:24px; align-items:flex-end;
   }
@@ -1364,6 +1364,78 @@
       updateHud();
       if (doRender || needsRender){ renderer.render(scene,camera); lastRendered=cur; needsRender=false; }
     }
+
+    // ---------- INSPETOR DE BLOCOS (tecla M) ----------
+    // Pra achar blocos que piscam (z-fighting): M liga/desliga; hover mostra o identificador;
+    // clicar seleciona; arrastar move o bloco (ver se afastar tira o flicker); "copiar info" dá
+    // nome+material+posição; R volta o bloco pro lugar original.
+    (function(){
+      let on=false, sel=null, dragging=false, hoverMat=null, hoverHex=0, lastPick=0, lbl=null, panel=null;
+      const rc=new THREE.Raycaster();
+      const camDir=new THREE.Vector3(), plane=new THREE.Plane(), hitP=new THREE.Vector3(), dstart=new THREE.Vector3(), ostart=new THREE.Vector3();
+      const idx=new Map(), home=new Map();
+      const canvas=renderer.domElement;
+      const mid=m=>{ if(!idx.has(m)) idx.set(m, idx.size); return (m.name&&m.name.trim())?m.name:('bloco #'+idx.get(m)); };
+      const matOf=m=>Array.isArray(m.material)?m.material[0]:m.material;
+      const matName=m=>{ const mm=matOf(m); return (mm&&mm.name)||'(sem nome)'; };
+      function ui(){
+        if(lbl) return;
+        lbl=document.createElement('div');
+        lbl.style.cssText='position:fixed;z-index:85;pointer-events:none;font:11px ui-monospace,monospace;color:#fff;background:rgba(12,13,14,.92);padding:4px 7px;border-radius:5px;white-space:nowrap;display:none';
+        panel=document.createElement('div');
+        panel.style.cssText='position:fixed;top:12px;left:12px;z-index:85;width:238px;font:11px/1.55 ui-monospace,monospace;color:#e7eaec;background:rgba(12,13,14,.93);padding:11px 12px;border-radius:8px;box-shadow:0 12px 46px rgba(0,0,0,.55);display:none';
+        document.body.appendChild(lbl); document.body.appendChild(panel);
+      }
+      function unhi(){ if(hoverMat){ if(hoverMat.emissive) hoverMat.emissive.setHex(hoverHex); hoverMat=null; needsRender=true; } }
+      function hi(m){ unhi(); const mm=matOf(m); if(mm&&mm.emissive){ hoverMat=mm; hoverHex=mm.emissive.getHex(); mm.emissive.setHex(0x2b6bff); needsRender=true; } }
+      function pickAt(e){
+        if(!modelRoot) return null;
+        const r=canvas.getBoundingClientRect();
+        rc.setFromCamera({x:((e.clientX-r.left)/r.width)*2-1, y:-((e.clientY-r.top)/r.height)*2+1}, camera);
+        const hs=rc.intersectObject(modelRoot,true); return hs.length?hs[0]:null;
+      }
+      function draw(m){
+        const p=m.position;
+        panel.innerHTML='<div style="color:#7ea8ff;letter-spacing:.08em;margin-bottom:6px">INSPETOR · tecla M</div>'
+          +'<div><b>'+mid(m)+'</b></div><div style="color:#9aa2a6">material: '+matName(m)+'</div>'
+          +'<div id="ip" style="color:#8fddb0;margin-top:4px">pos '+p.x.toFixed(3)+', '+p.y.toFixed(3)+', '+p.z.toFixed(3)+'</div>'
+          +'<div style="color:#8b938f;font-size:10px;margin-top:6px">arraste pra mover · tecla R = voltar</div>'
+          +'<button id="ic" style="margin-top:8px;width:100%;padding:5px;background:#2a2d2f;border:1px solid #444;color:#e7eaec;border-radius:4px;cursor:pointer">copiar info</button>';
+        panel.style.display='block';
+        panel.querySelector('#ic').onclick=()=>{ const q=m.position; const s=mid(m)+' | mat: '+matName(m)+' | pos: '+q.x.toFixed(3)+', '+q.y.toFixed(3)+', '+q.z.toFixed(3); if(navigator.clipboard) navigator.clipboard.writeText(s); };
+      }
+      function ip(m){ const el=panel&&panel.querySelector('#ip'); if(el){ const p=m.position; el.textContent='pos '+p.x.toFixed(3)+', '+p.y.toFixed(3)+', '+p.z.toFixed(3); } }
+      addEventListener('keydown', e=>{
+        if((e.key==='m'||e.key==='M') && !(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))){
+          on=!on; ui(); canvas.style.cursor=on?'crosshair':'';
+          if(!on){ unhi(); lbl.style.display='none'; panel.style.display='none'; sel=null; }
+        } else if(on && sel && (e.key==='r'||e.key==='R') && home.has(sel)){ sel.position.copy(home.get(sel)); needsRender=true; ip(sel); }
+      });
+      canvas.addEventListener('mousedown', e=>{
+        if(!on) return;
+        const h=pickAt(e); if(!h) return;
+        sel=h.object; if(!home.has(sel)) home.set(sel, sel.position.clone());
+        draw(sel);
+        camera.getWorldDirection(camDir); plane.setFromNormalAndCoplanarPoint(camDir, sel.position);
+        const r=canvas.getBoundingClientRect();
+        rc.setFromCamera({x:((e.clientX-r.left)/r.width)*2-1, y:-((e.clientY-r.top)/r.height)*2+1}, camera);
+        if(rc.ray.intersectPlane(plane, dstart)){ ostart.copy(sel.position); dragging=true; e.preventDefault(); }
+      });
+      addEventListener('mousemove', e=>{
+        if(!on) return;
+        if(dragging && sel){
+          const r=canvas.getBoundingClientRect();
+          rc.setFromCamera({x:((e.clientX-r.left)/r.width)*2-1, y:-((e.clientY-r.top)/r.height)*2+1}, camera);
+          if(rc.ray.intersectPlane(plane, hitP)){ sel.position.copy(ostart).add(hitP).sub(dstart); needsRender=true; ip(sel); }
+          return;
+        }
+        const now=performance.now(); if(now-lastPick<70) return; lastPick=now;
+        const h=pickAt(e);
+        if(h){ hi(h.object); lbl.textContent=mid(h.object); lbl.style.left=(e.clientX+14)+'px'; lbl.style.top=(e.clientY+14)+'px'; lbl.style.display='block'; }
+        else { unhi(); lbl.style.display='none'; }
+      });
+      addEventListener('mouseup', ()=>{ dragging=false; });
+    })();
 
     // ---- galeria horizontal do fim: rola vertical -> as imagens passam na horizontal ----
     (function(){
