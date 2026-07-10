@@ -739,9 +739,8 @@
     loadstatus.textContent = 'baixando o apartamento…';
     loadbar.style.width = '20%';
 
-    // versão do modelo: ?min carrega a comprimida (webp 512 + draco, ~14,6MB) pra testar
-    // lado a lado com a atual (~30MB) antes de virar padrão. Sem ?min = versão atual.
-    const GLB = /[?&]min/.test(location.search) ? 'apto-117.min.glb' : 'apto-117.opt.glb';
+    // PADRÃO = versão comprimida (webp 512 + draco, ~14MB). ?full carrega o original de ~30MB (comparação).
+    const GLB = /[?&]full/.test(location.search) ? 'apto-117.opt.glb' : 'apto-117.min.glb';
 
     // z-fighting: blocos que piscam (encostados/coplanares). nome do node -> polygonOffset.
     // negativo puxa pra frente (vence por cima); positivo empurra pra trás. Achados via tecla M.
