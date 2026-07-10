@@ -264,17 +264,22 @@
   @media (max-width:600px){ header .nav .soc{ display:none; } }   /* header limpo no mobile: social fica no footer/contato */
   @media (max-width:760px){ footer .fsoc{ justify-content:flex-start; } }
 
-  /* projetos: status normal; no hover troca pra "Em breve" (sinaliza que ainda não abre) */
-  .plist .py{ position:relative; transition:color .2s ease; }
-  .plist li:hover .py{ color:transparent; }
-  .plist li:hover .py::after{ content:attr(data-soon); position:absolute; right:0; top:0; white-space:nowrap;
-    color:var(--mute); font-size:12px; letter-spacing:.16em; }
-
   /* hotbox só com imagens (sem texto): título em cima, grid embaixo em largura cheia */
   #hotbox .hb-text:empty{ display:none; }
   #hotbox.imgs-only .hb-body{ flex-direction:column; align-items:stretch; }
   #hotbox.imgs-only .hb-main{ flex:none; }
   #hotbox.imgs-only .hb-grid{ flex:none; width:100%; }
+
+  /* logo do footer (espaços com significados) — multiply pra sumir o fundo contra o creme */
+  footer .flogo{ display:block; width:min(230px,58vw); height:auto; mix-blend-mode:multiply; }
+
+  /* galeria horizontal do fim: rola vertical, as fotos passam na horizontal */
+  #gallery{ position:relative; z-index:20; background:#dfe3e5; }
+  #gallery .gal-sticky{ position:sticky; top:0; height:100vh; overflow:hidden; display:flex; align-items:center; }
+  #gallery .gal-track{ display:flex; align-items:center; gap:2.2vw; padding:0 6vw; will-change:transform; }
+  #gallery .gal-item{ flex:0 0 auto; margin:0; width:min(440px,64vw); height:min(64vh,560px); border-radius:4px; overflow:hidden; box-shadow:0 30px 70px -34px rgba(20,22,20,.5); }
+  #gallery .gal-item img{ width:100%; height:100%; object-fit:cover; display:block; }
+  @media (max-width:760px){ #gallery .gal-item{ width:76vw; height:52vh; } #gallery .gal-track{ gap:5vw; padding:0 8vw; } }
 </style>
 </head>
 <body>
@@ -451,9 +456,9 @@
       <div class="eyebrow">projetos</div>
       <h3>obras recentes</h3>
       <ul class="plist">
-        <li><div class="pn">Casa Pipa<em>projeto arquitetônico + interiores · 600m²</em></div><div class="py" data-soon="Em breve">Concluído</div></li>
-        <li><div class="pn">Apartamento Armorial<em>projeto de interiores · 120m²</em></div><div class="py" data-soon="Em breve">Concluído</div></li>
-        <li><div class="pn">Cobertura Oceania<em>reforma integral · 300m²</em></div><div class="py" data-soon="Em breve">Concluído</div></li>
+        <li><div class="pn">Casa Pipa<em>projeto arquitetônico + interiores · 600m²</em></div><div class="py">Em breve</div></li>
+        <li><div class="pn">Apartamento Armorial<em>projeto de interiores · 120m²</em></div><div class="py">Em breve</div></li>
+        <li><div class="pn">Cobertura Oceania<em>reforma integral · 300m²</em></div><div class="py">Em breve</div></li>
       </ul>
     </div>
 
@@ -484,8 +489,33 @@
     </div>
   </div>
 
+  <!-- galeria horizontal do fim: rola vertical, as imagens passam na horizontal até acabar -->
+  <section id="gallery" aria-label="Galeria do projeto">
+    <div class="gal-sticky">
+      <div class="gal-track" id="galTrack">
+        <figure class="gal-item"><img src="public/fotos/sala-01.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/sala-02.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/sala-03.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/cozinha-01.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/cozinha-02.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/cozinha-03.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/cozinha-04.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/cozinha-05.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/suite-01.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/suite-02.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/suite-03.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/suite-04.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/leitura-01.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/leitura-02.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/leitura-03.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/varanda-01.jpg" alt="" loading="lazy"></figure>
+        <figure class="gal-item"><img src="public/fotos/escada-01.jpg" alt="" loading="lazy"></figure>
+      </div>
+    </div>
+  </section>
+
   <footer>
-    <div class="big">Renata Dantas</div>
+    <img class="flogo" src="public/fotos/espaco-significados.png" alt="Renata Dantas — Espaços com Significados">
     <div class="meta">ateliê de arquitetura<br>joão pessoa · pb
       <div class="soc fsoc"><a href="https://www.instagram.com/renatadantas.a" target="_blank" rel="noopener" aria-label="Instagram"><svg><use href="#ic-ig"/></svg></a><a href="https://www.youtube.com/@renatadantas.a" target="_blank" rel="noopener" aria-label="YouTube"><svg><use href="#ic-yt"/></svg></a><a href="https://www.tiktok.com/@renatadantas.a" target="_blank" rel="noopener" aria-label="TikTok"><svg><use href="#ic-tt"/></svg></a></div>
     </div>
@@ -1139,6 +1169,11 @@
     }
     function updateHotspots(){
       if(!hotspotsEl) return;
+      // some junto com a casa: quando a cena 3D já sumiu (fim/galeria), esconde os pins
+      if(!hotEditOn && cur>0.9925){
+        for(let gi=0;gi<HOTS.length;gi++){ const gd=HOTS[gi]._el; if(gd){ gd.style.opacity=0; gd.style.pointerEvents='none'; } }
+        return;
+      }
       let ns=0,best=1e9;
       for(let k=0;k<seg.length;k++){ const d=Math.abs(cur-seg[k]); if(d<best){best=d;ns=k;} }
       stopVis=THREE.MathUtils.clamp(1-best/0.06,0,1);   // 1 = parado bem na parada; some ao sair
@@ -1329,6 +1364,27 @@
       updateHud();
       if (doRender || needsRender){ renderer.render(scene,camera); lastRendered=cur; needsRender=false; }
     }
+
+    // ---- galeria horizontal do fim: rola vertical -> as imagens passam na horizontal ----
+    (function(){
+      const gal=document.getElementById('gallery');
+      const track=document.getElementById('galTrack');
+      if(!gal || !track) return;
+      let maxX=0;
+      function onGalScroll(){
+        const top=gal.getBoundingClientRect().top;
+        const p = maxX>0 ? Math.min(1, Math.max(0, -top/maxX)) : 0;
+        track.style.transform='translate3d('+(-p*maxX).toFixed(1)+'px,0,0)';
+      }
+      function layout(){
+        maxX=Math.max(0, track.scrollWidth - innerWidth);
+        gal.style.height=(innerHeight+maxX)+'px';   // altura = 100vh + distância de pan (scroll vertical = pan 1:1)
+        onGalScroll();
+      }
+      addEventListener('resize', layout);
+      addEventListener('scroll', onGalScroll, {passive:true});
+      layout();
+    })();
 
     function onViewportChange(){
       applyCameraFraming();  // recalcula fov/aspect (e o retrato) ao girar ou redimensionar
