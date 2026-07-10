@@ -272,15 +272,16 @@
   /* logo do footer (espaços com significados) — multiply pra sumir o fundo contra o creme */
   footer .flogo{ display:block; width:min(230px,58vw); height:auto; mix-blend-mode:multiply; }
 
-  /* cena final: overlay FIXO cinza (entra em FADE, não sobe). footer embaixo, fotos entram em sequência e depois passam na horizontal */
+  /* cena final: overlay FIXO cinza. INTRO em TEMPO (não scroll): 1s cinza -> 0,3s footer sobe -> 0,3s fade imagens -> depois scroll faz o pan */
   #gallery{ position:relative; }  /* só espaçador de scroll; o visual é o .fin fixo */
-  #gallery .fin{ position:fixed; inset:0; z-index:35; background:#dfe3e5; overflow:hidden; display:flex; flex-direction:column; opacity:0; visibility:hidden; will-change:opacity; }
+  #gallery .fin{ position:fixed; inset:0; z-index:35; background:#dfe3e5; overflow:hidden; display:flex; flex-direction:column; opacity:0; visibility:hidden; }
+  #gallery .fin.play{ opacity:1; visibility:visible; transition:opacity 1s ease; }                                    /* 1s: tudo fica cinza */
   #gallery .gal-track{ flex:1 1 auto; min-height:0; display:flex; align-items:center; gap:2.4vw; padding:0 6vw; will-change:transform; }
-  #gallery .gal-item{ flex:0 0 auto; margin:0; height:min(54vh,480px); border-radius:4px; overflow:hidden; box-shadow:0 30px 70px -34px rgba(20,22,20,.5);
-    opacity:0; transform:translateY(24px) scale(.985); transition:opacity .6s ease, transform .6s ease; }
-  #gallery .gal-item.in{ opacity:1; transform:none; }
+  #gallery .gal-item{ flex:0 0 auto; margin:0; height:min(54vh,480px); border-radius:4px; overflow:hidden; box-shadow:0 30px 70px -34px rgba(20,22,20,.5); opacity:0; }
+  #gallery .fin.play .gal-item{ opacity:1; transition:opacity .3s ease 1.3s; }                                        /* 0,3s: fade das imagens (após 1s+0,3s) */
   #gallery .gal-item img{ height:100%; width:auto; display:block; }
-  #gallery .gal-footer{ flex:0 0 auto; }
+  #gallery .gal-footer{ flex:0 0 auto; transform:translateY(110%); opacity:0; }
+  #gallery .fin.play .gal-footer{ transform:none; opacity:1; transition:transform .3s ease 1s, opacity .3s ease 1s; } /* 0,3s: footer sobe de baixo (após 1s) */
   @media (max-width:760px){ #gallery .gal-item{ height:40vh; } #gallery .gal-track{ gap:5vw; padding:0 8vw; } }
 </style>
 </head>
@@ -727,6 +728,7 @@
         loadstatus.textContent = 'montando o apartamento…';
         gltfLoader.parse(arrayBuffer, '', (gltf) => {
           modelRoot = gltf.scene;
+          const maxAniso = renderer.capabilities.getMaxAnisotropy();  // filtragem anisotrópica (anti-tremido)
           modelRoot.traverse(o=>{
             if (o.isMesh){
               o.castShadow = !small;
@@ -734,7 +736,13 @@
               if (o.material) {
                 const mats = Array.isArray(o.material) ? o.material : [o.material];
                 // mats.forEach(m=>{ if(m) m.envMapIntensity = 0.6; });
-                mats.forEach(m=>{ if(m) m.envMapIntensity = Math.min(m.envMapIntensity ?? 1, 0.45); })
+                mats.forEach(m=>{ if(m){
+                  m.envMapIntensity = Math.min(m.envMapIntensity ?? 1, 0.45);
+                  // anisotropia: mata o "tremido" das texturas em ângulo durante o scroll
+                  ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap'].forEach(k=>{
+                    if(m[k] && m[k].isTexture){ m[k].anisotropy = maxAniso; m[k].needsUpdate = true; }
+                  });
+                } })
               }
               // z-fighting: clona o material do bloco e aplica polygonOffset só nele
               // (não afeta outros meshes que compartilham o mesmo material)
@@ -1478,29 +1486,25 @@
       const fin=gal && gal.querySelector('.fin');
       const track=document.getElementById('galTrack');
       if(!gal || !fin || !track) return;
-      const items=[...track.querySelectorAll('.gal-item')];
-      let maxX=0, FADE=0;
+      let maxX=0, HOLD=0, playing=false;
       // larguras naturais: recalcula o layout quando cada imagem carrega (a largura depende do aspect real)
       track.querySelectorAll('img').forEach(img=>{ if(!img.complete) img.addEventListener('load', layout, {once:true}); });
       function onScroll(){
         const scrolled = -gal.getBoundingClientRect().top;                 // 0 quando o espaçador chega ao topo
-        if(scrolled < -innerHeight*1.1){ fin.style.visibility='hidden'; return; }  // longe do fim: overlay escondido
-        fin.style.visibility='visible';
-        const fadeP = Math.min(1, Math.max(0, scrolled/FADE));
-        const bg = Math.min(1, fadeP/0.35);                                // cinza + footer entram em FADE (primeiros 35%)
-        fin.style.opacity = (bg*bg*(3-2*bg)).toFixed(3);                   // smoothstep
-        fin.style.pointerEvents = bg>0.6 ? 'auto' : 'none';
-        for(let i=0;i<items.length;i++){                                   // imagens entram em SEQUÊNCIA (depois do fundo)
-          if(!items[i].classList.contains('in') && fadeP >= 0.35 + i*(0.6/items.length)) items[i].classList.add('in');
+        if(scrolled < -innerHeight*0.5){                                   // saiu do fim: reseta pra o intro re-tocar se voltar
+          if(playing){ fin.classList.remove('play'); playing=false; }
+          return;
         }
-        const panScrolled = Math.max(0, scrolled - FADE);                  // pan horizontal só depois de tudo entrar
+        if(scrolled >= 0 && !playing){ playing=true; fin.classList.add('play'); }  // dispara o intro em TEMPO (1s + 0,3s + 0,3s)
+        fin.style.pointerEvents = playing ? 'auto' : 'none';
+        const panScrolled = Math.max(0, scrolled - HOLD);                  // pan horizontal só depois do respiro do intro
         const p = maxX>0 ? Math.min(1, panScrolled/maxX) : 0;
         track.style.transform='translate3d('+(-p*maxX).toFixed(1)+'px,0,0)';
       }
       function layout(){
-        FADE = innerHeight*0.8;                                            // zona de fade + entrada em sequência
+        HOLD = innerHeight*0.4;                                            // respiro de scroll pro intro tocar antes do pan
         maxX = Math.max(0, track.scrollWidth - innerWidth);
-        gal.style.height = (innerHeight + FADE + maxX) + 'px';             // espaçador: entra(FADE) + pan(maxX)
+        gal.style.height = (innerHeight + HOLD + maxX) + 'px';
         onScroll();
       }
       addEventListener('resize', layout);
