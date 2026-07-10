@@ -682,7 +682,7 @@
 
     // z-fighting: blocos que piscam (encostados/coplanares). nome do node -> polygonOffset.
     // negativo puxa pra frente (vence por cima); positivo empurra pra trás. Achados via tecla M.
-    const ZFIX = { '3DGEOM-2852': -1, '3DGEOM-1200': 1 };
+    const ZFIX = { '3DGEOM-2852': -4, '3DGEOM-1200': 4 };
     fetch(GLB)
       .then(res => {
         if (!res.ok) throw new Error('HTTP ' + res.status + ' ao buscar ' + GLB + ' — confira se o arquivo está na mesma pasta e se está servindo via http(s), não file://.');
@@ -1383,7 +1383,7 @@
     (function(){
       let on=false, sel=null, dragging=false, hoverMat=null, hoverHex=0, lastPick=0, lbl=null, panel=null;
       const rc=new THREE.Raycaster();
-      const camDir=new THREE.Vector3(), plane=new THREE.Plane(), hitP=new THREE.Vector3(), dstart=new THREE.Vector3(), ostart=new THREE.Vector3();
+      const camDir=new THREE.Vector3(), plane=new THREE.Plane(), hitP=new THREE.Vector3(), dstart=new THREE.Vector3(), oworld=new THREE.Vector3(), wtarget=new THREE.Vector3(), tmpW=new THREE.Vector3();
       const idx=new Map(), home=new Map();
       const canvas=renderer.domElement;
       const mid=m=>{ if(!idx.has(m)) idx.set(m, idx.size); return (m.name&&m.name.trim())?m.name:('bloco #'+idx.get(m)); };
@@ -1411,12 +1411,16 @@
         panel.innerHTML='<div style="color:#7ea8ff;letter-spacing:.08em;margin-bottom:6px">INSPETOR · tecla M</div>'
           +'<div><b>'+mid(m)+'</b>'+cyc+'</div><div style="color:#9aa2a6">material: '+matName(m)+'</div>'
           +'<div id="ip" style="color:#8fddb0;margin-top:4px">pos '+p.x.toFixed(3)+', '+p.y.toFixed(3)+', '+p.z.toFixed(3)+'</div>'
-          +'<div style="color:#8b938f;font-size:10px;margin-top:6px">arraste pra mover · tecla R = voltar</div>'
-          +'<button id="ic" style="margin-top:8px;width:100%;padding:5px;background:#2a2d2f;border:1px solid #444;color:#e7eaec;border-radius:4px;cursor:pointer">copiar info</button>';
+          +'<div style="color:#8b938f;font-size:10px;margin:8px 0 4px">arraste na cena, ou empurre 1cm por eixo:</div>'
+          +'<div style="display:flex;gap:6px">'+['x','y','z'].map(a=>'<span style="flex:1;display:flex;gap:3px"><button class="nb" data-ax="'+a+'" data-d="-1" style="flex:1;padding:5px 0;background:#2a2d2f;border:1px solid #444;color:#e7eaec;border-radius:4px;cursor:pointer">'+a+'−</button><button class="nb" data-ax="'+a+'" data-d="1" style="flex:1;padding:5px 0;background:#2a2d2f;border:1px solid #444;color:#e7eaec;border-radius:4px;cursor:pointer">'+a+'+</button></span>').join('')+'</div>'
+          +'<div style="color:#8b938f;font-size:10px;margin:6px 0">tecla R = voltar ao lugar</div>'
+          +'<button id="ic" style="width:100%;padding:5px;background:#2a2d2f;border:1px solid #444;color:#e7eaec;border-radius:4px;cursor:pointer">copiar info</button>';
         panel.style.display='block';
+        panel.querySelectorAll('.nb').forEach(b=>b.onclick=()=>nudge(b.dataset.ax, (+b.dataset.d)*0.01));
         panel.querySelector('#ic').onclick=()=>{ const q=m.position; const s=mid(m)+' | mat: '+matName(m)+' | pos: '+q.x.toFixed(3)+', '+q.y.toFixed(3)+', '+q.z.toFixed(3); if(navigator.clipboard) navigator.clipboard.writeText(s); };
       }
       function ip(m){ const el=panel&&panel.querySelector('#ip'); if(el){ const p=m.position; el.textContent='pos '+p.x.toFixed(3)+', '+p.y.toFixed(3)+', '+p.z.toFixed(3); } }
+      function nudge(ax, amt){ if(!sel) return; sel.getWorldPosition(tmpW); tmpW[ax]+=amt; if(sel.parent) sel.parent.worldToLocal(tmpW); sel.position.copy(tmpW); needsRender=true; ip(sel); }
       addEventListener('keydown', e=>{
         if((e.key==='m'||e.key==='M') && !(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))){
           on=!on; ui(); canvas.style.cursor=on?'crosshair':'';
@@ -1440,17 +1444,22 @@
         const i=cyc%hs.length; sel=hs[i].object;
         if(!home.has(sel)) home.set(sel, sel.position.clone());
         draw(sel, i, hs.length);
-        camera.getWorldDirection(camDir); plane.setFromNormalAndCoplanarPoint(camDir, sel.position);
+        sel.getWorldPosition(oworld);
+        camera.getWorldDirection(camDir); plane.setFromNormalAndCoplanarPoint(camDir, oworld);
         const r=canvas.getBoundingClientRect();
         rc.setFromCamera({x:((e.clientX-r.left)/r.width)*2-1, y:-((e.clientY-r.top)/r.height)*2+1}, camera);
-        if(rc.ray.intersectPlane(plane, dstart)){ ostart.copy(sel.position); dragging=true; e.preventDefault(); }
+        if(rc.ray.intersectPlane(plane, dstart)){ dragging=true; e.preventDefault(); }
       });
       addEventListener('mousemove', e=>{
         if(!on) return;
         if(dragging && sel){
           const r=canvas.getBoundingClientRect();
           rc.setFromCamera({x:((e.clientX-r.left)/r.width)*2-1, y:-((e.clientY-r.top)/r.height)*2+1}, camera);
-          if(rc.ray.intersectPlane(plane, hitP)){ sel.position.copy(ostart).add(hitP).sub(dstart); needsRender=true; ip(sel); }
+          if(rc.ray.intersectPlane(plane, hitP)){
+            wtarget.copy(oworld).add(hitP).sub(dstart);       // nova posição no MUNDO
+            if(sel.parent) sel.parent.worldToLocal(wtarget);  // -> local do pai (respeita rotação/escala)
+            sel.position.copy(wtarget); needsRender=true; ip(sel);
+          }
           return;
         }
         const now=performance.now(); if(now-lastPick<70) return; lastPick=now;
