@@ -544,8 +544,9 @@
     const DEBUG_LOAD = /[?&](debug|diag)/.test(location.search);
     if (!DEBUG_LOAD){ const lh=document.getElementById('livehash'); if(lh) lh.style.display='none'; }
 
-    // const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
-    const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance', logarithmicDepthBuffer:true });
+    // logarithmicDepthBuffer OFF de propósito: ele ANULA o polygonOffset (escreve o depth no shader),
+    // o que impedia o fix de z-fighting dos blocos coplanares. Range 0.1–40 tem precisão de sobra sem ele.
+    const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(innerWidth, innerHeight);
     renderer.outputEncoding = THREE.sRGBEncoding;
@@ -1504,7 +1505,7 @@
       function layout(){
         HOLD = innerHeight*0.12;                                           // respiro curto antes do pan
         maxX = Math.max(0, track.scrollWidth - innerWidth);
-        PANLEN = maxX*0.55;                                                // pan mais rápido: menos scroll pra passar as fotos
+        PANLEN = maxX*0.90;                                                // pan mais rápido: menos scroll pra passar as fotos
         gal.style.height = (innerHeight + HOLD + PANLEN) + 'px';
         onScroll();
       }
