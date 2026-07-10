@@ -59,7 +59,7 @@
 }
 </script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,600;1,400;1,600&display=swap');
 
   :root{
     --ink:#1b1d1e;
@@ -67,7 +67,7 @@
     --line:rgba(30,30,28,.14);
     --card:rgba(247,245,240,.9);
     --poppins:'Poppins', sans-serif, system-ui, sans-serif;
-    --serif:'Cormorant Garamond', Georgia, serif;
+    --serif: var(--poppins);  /* tudo em Poppins: o "serif" agora aponta pra Poppins (mantém o itálico onde tem) */
   }
   *{ margin:0; padding:0; box-sizing:border-box; }
   body{ font-family:var(--poppins); color:var(--ink); background:#dfe3e5; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
